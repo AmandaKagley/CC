@@ -1,6 +1,6 @@
-# CC
+# Cougars Connections
 
-## Cougars Connections is a way for students at SCC to communicate with each other.
+## A way for students at SCC to communicate with each other.
 
 This webite is designed for ONLY the students of Saint Charles Community College. The students will have the opportunity to create their account using their SCC email and password. Anyone who has not taken classes for 12 months or longer will lose access to the site and will have to create a new account if they pursue more classes at SCC. 
 
