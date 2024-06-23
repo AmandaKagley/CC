@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Us - Saint Charles Community College Students</title>
+    <link rel="stylesheet" href="/Cougar_Communications/fronend/my-react-app/public/CSS/Index/Main.CSS">
+  </head>
+
+  <body>
+    <header>
+      <div class="container">
+        <a class="nav-link btn logo" href="/"> <img src="/Cougar_Communications/fronend/my-react-app/Images/logo.jpg" alt="Saint Charles Community College Logo"> </a>
+        <h1 class="page-title">Contact Us</h1>
+        <nav>
+          <a class="nav-link btn" href="/Cougar_Communications/fronend/my-react-app/account.html/html">Login/Sign Up</a>
+          <a class="nav-link btn" href="/Cougar_Communications/fronend/my-react-app/About/html">About Us</a>
+          <a class="nav-link btn" href="/Cougar_Communications/fronend/my-react-app/Contact/html">contact</a>
+        </nav>
+      </div>
+
+    </header>
+
+    <main>
+      <div class="container">
+        <div class="contact-info">
+          <ul>
+            <li>
+              <strong>Jeffrey Saylor</strong>
+              <a href="mailto:js266819@my.stchas.edu">js266819@my.stchas.edu</a>
+            </li>
+            <li>
+              <strong>Mitchell Jones</strong>
+              <a href="mailto:mj265496@my.stchas.edu">mj265496@my.stchas.edu</a>
+            </li>
+            <li>
+              <strong>Alexander Brinkley</strong>
+              <a href="mailto:ab278275@my.stchas.edu">ab278275@my.stchas.edu</a>
+            </li>
+            <li>
+              <strong>Ollie Peel</strong>
+              <a href="mailto:ep260480@my.stchas.edu">ep260480@my.stchas.edu</a>
+            </li>
+            <li>
+              <strong>Amanda Kagley</strong>
+              <a href="mailto:ak205788@my.stchas.edu">ak205788@my.stchas.edu</a>
+            </li>
+            <li>
+              <strong>Manoela Toro</strong>
+              <a href="mailto:mt258531@my.stchas.edu">mt258531@my.stchas.edu</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
