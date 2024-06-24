@@ -2,6 +2,8 @@ const express = require("express");
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const dialogflow = require('@google-cloud/dialogflow');
+const sqlite3 = require('sqlite3').verbose();
+const db = new sqlite3.Database(':memory:');
 
 const app = express();
 const port = 3000; // Single port for the server
