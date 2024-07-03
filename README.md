@@ -8,6 +8,6 @@ This webite is designed for ONLY the students of Saint Charles Community College
  * Amanda Kagley - Ak205788@my.stchas.edu
  * Jeffrey Saylor - Js266819@my.stchas.edu
  * Mitchell Jones - Mj265496@my.stchas.edu
- * Alexander Brinkley - Ab275278@my.stchas.edu
+ * Alexander Brinkley - Ab278275@my.stchas.edu
  * Ollie Peel - Ep260480@my.stchas.edu
  * Manoela Toro - Mt258531@my.stchas.edu
