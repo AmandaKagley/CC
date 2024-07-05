@@ -11,7 +11,8 @@ CREATE TABLE Users (
     UserID INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     Email TEXT NOT NULL,
     Username VARCHAR NOT NULL,
-    Password VARCHAR NOT NULL
+    Password VARCHAR NOT NULL,
+    ProfilePicture BLOB
 );
 
 -- Stores friendship and requests 
@@ -57,9 +58,9 @@ CREATE TABLE Messages (
 -- Insert statements were generated using ChatGTP
 
 -- Insert users
-INSERT INTO Users (Email, Username, Password) VALUES ('alice@example.com', 'Alice', 'password1');
-INSERT INTO Users (Email, Username, Password) VALUES ('bob@example.com', 'Bob', 'password2');
-INSERT INTO Users (Email, Username, Password) VALUES ('carol@example.com', 'Carol', 'password3');
+INSERT INTO Users (Email, Username, Password, ProfilePicture) VALUES ('alice@example.com', 'Alice', 'password1', NULL);
+INSERT INTO Users (Email, Username, Password, ProfilePicture) VALUES ('bob@example.com', 'Bob', 'password2', NULL);
+INSERT INTO Users (Email, Username, Password, ProfilePicture) VALUES ('carol@example.com', 'Carol', 'password3', NULL);
 
 -- Insert friendships
 INSERT INTO Friends (UserID, FriendID, FriendshipStatus) 

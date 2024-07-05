@@ -3,7 +3,12 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const dialogflow = require('@google-cloud/dialogflow');
 const sqlite3 = require('sqlite3').verbose();
-const db = new sqlite3.Database(':memory:');
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
+
+// SQLite database setup
+const db = new sqlite3.Database(path.join(__dirname, 'database', 'CC.db'));
 
 const app = express();
 const port = 3000; // Single port for the server
@@ -17,6 +22,10 @@ const sessionPath = sessionClient.projectAgentSessionPath(projectId, sessionId);
 // Middleware setup
 app.use(bodyParser.json());
 app.use(cors());
+app.use(express.static(path.join(__dirname)));
+
+// Configure Multer for file uploads
+const upload = multer({ dest: 'uploads/' });
 
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
@@ -73,4 +82,49 @@ app.post('/chatbot', async (req, res) => {
     console.error('ERROR:', error);
     res.status(500).send('Error processing request');
   }
+});
+
+// Endpoint to handle profile picture upload
+app.post('/upload-profile-picture', upload.single('profilePicture'), (req, res) => {
+  const userId = req.body.userId;
+  const profilePicturePath = req.file.path;
+
+  // Read the image file and convert to binary
+  fs.readFile(profilePicturePath, (err, data) => {
+    if (err) {
+      return res.status(500).send('Error reading file');
+    }
+
+    const updateQuery = `UPDATE Users SET ProfilePicture = ? WHERE UserID = ?`;
+    db.run(updateQuery, [data, userId], function (err) {
+      if (err) {
+        return res.status(500).send('Error updating profile picture');
+      }
+      // Delete the file after storing it in the database
+      fs.unlinkSync(profilePicturePath);
+      res.send('Profile picture updated successfully');
+    });
+  });
+});
+
+// Endpoint to serve profile pictures
+app.get('/profile-picture/:userId', (req, res) => {
+  const userId = req.params.userId;
+  const query = `SELECT ProfilePicture FROM Users WHERE UserID = ?`;
+  db.get(query, [userId], (err, row) => {
+    if (err) {
+      return res.status(500).send('Error retrieving profile picture');
+    }
+    if (!row || !row.ProfilePicture) {
+      return res.status(404).send('Profile picture not found');
+    }
+    // Set the appropriate content type (assuming JPEG for this example)
+    res.setHeader('Content-Type', 'image/jpeg');
+    res.send(row.ProfilePicture);
+  });
+});
+
+// Serve the HTML file
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
