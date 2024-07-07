@@ -106,11 +106,11 @@ signupForm.addEventListener('submit', (event) => {
   const email = signupForm.email.value;
   const password = signupForm.password.value;
 
-  validateEmail(email) {
-    if (!email.endsWith('@my.stchas.edu')) {
-      alert("Email must end with '@my.stchas.edu'");
-      return; // Prevent submission
-    }
+  if (!validateEmail(email)) {
+    alert("Email must end with '@my.stchas.edu'");
+    return; // Prevent submission
+  }
+  
 
     // 3. Send signup data to your backend (using AJAX or Fetch API)
     // Example using Fetch API (replace with your backend URL)
@@ -181,7 +181,11 @@ export default defineConfig({
   plugins: [react()],
 })
 // After successful login, hide login/signup section and show user profile
-if (/* Check if user is logged in */) { // Add your logic for checking if a user is logged in
+
+//  Commented out to avoid errors
+/*
+if ( Check if user is logged in ) { // Add your logic for checking if a user is logged in
   document.getElementById('login-signup-section').style.display = 'none';
   userProfileSection.style.display = 'block';
 }
+*/
