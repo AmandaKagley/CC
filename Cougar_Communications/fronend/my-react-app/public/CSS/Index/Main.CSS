@@ -1,144 +1,106 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap");
+
 /* Basic Styling */
-body {
-  font-family: sans-serif;
+* {
   margin: 0;
   padding: 0;
-  background-color: #f2f2f2;
+  box-sizing: border-box;
+  font-family: "Poppins", sans-serif;
+}
+
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: #545454;
 }
 
 h1 {
   text-align: center;
-  margin-top: 50px;
   color: #fbf9f9;
 }
 
-/* Hero Section Styling */
-.hero {
-  background-color: maroon; 
-  color: white; 
+.header {
+  overflow: hidden;
+  background-color: #0b1622;
+  padding: 10px 20px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+}
+
+.header img {
+  width: 50px;
+}
+
+.header a {
+  float: left;
+  color: rgb(255, 255, 255);
   text-align: center;
-  padding: 50px 0; 
-  min-height: 100vh; /* Make hero cover the entire viewport vertically */
+  padding: 12px;
+  text-decoration: none;
+  font-size: 18px;
+  line-height: 25px;
+  border-radius: 4px;
 }
 
-.hero-image {
-  max-width: 80%;
-  height: auto; 
-  display: block; 
-  margin: 0 auto; 
+.header a.logo {
+  font-size: 25px;
+  font-weight: bold;
+  padding: 0 !important;
 }
 
-.hero-text {
-  position: relative;
-  z-index: 1; 
-  color: white;
+.header-right {
+  display: block;
+  align-items: center;
 }
 
-/* Header & Logo Styling */
-header {
-  background-color: #fff; 
-  padding: 20px;
-  position: relative; 
+@media screen and (max-width: 500px) {
+  .header a {
+    float: none;
+    display: block;
+    text-align: left;
+  }
+
+  .header-right {
+    float: none;
+  }
 }
 
-.container {
-  display: flex; 
-  justify-content: space-between; 
-  align-items: center; 
+.header-right h1 {
+  color: #fff;
+  text-align: center;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-.logo {
-  display: block; 
-  height: auto; 
+.footer {
+  overflow: hidden;
+  background-color: #0b1622;
+  padding: 10px 20px;
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  width: 100%;
 }
 
-.logo img {
-  max-width: 20%;
-  height: auto;
-}
-.hero {
-  background: linear-gradient(to bottom, maroon, #660000); 
-}
-
-
-/* Navigation Styling */
-nav {
-  margin-left: 20px; /* Add some spacing from the logo */
+.footer a {
+  float: right;
+  display: block;
+  color: rgb(255, 255, 255);
+  text-align: right;
+  padding: 12px;
+  text-decoration: none;
+  font-size: 18px;
+  line-height: 25px;
+  border-radius: 4px;
 }
 
-nav ul {
-  list-style: none;
-  margin: 4;
-  padding: 10px 0;
+.footer a:hover {
+  text-decoration: underline;
 }
 
-nav li {
-  display: inline-block; /* Make navigation links inline */
-  margin-left: 20px; /* Add spacing between links */
-}
-
-nav a {
-  text-decoration: none; /* Remove underline */
-  color: #333; /* Link color */
-  border-style: solid;
-  background-color: darkred;
-  margin-inline: 10px;
-   padding: 10px 20px; 
-  border:#333; 
-  border-radius: 3px; 
-  cursor: pointer;
-}
-button {
-  background-color: #010f02; /* Black */
-  color: white; 
-  padding: 10px 20px; 
-  border:#333; 
-  border-radius: 1px; 
-  cursor: pointer; 
-}
-
-/* Light Mode (Default) */
-body {
-    font-family: 'Arial', sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: #f2f2f2; /* Light Gray */
-    color: #590d0d;  /* Dark Red*/
-}
-
-/* Header Styling (Light Mode) */
-header {
-    background-color: #fff; /* White */
-}
-
-/* ... (Other light mode styles) ... */
-
-/* Dark Mode */
-body.dark-mode { 
-    background-color: #222; /* Dark Gray */
-    color: #eee; /* Light Gray Text */
-}
-
-/* Header Styling (Dark Mode) */
-header.dark-mode {
-    background-color: #333; /* Darker Gray */
-}
-
-
-
-/* Main Container (to center the hero section) */
-main {
-  max-width: 960px;
-  margin: 0 auto;
-}
-
-form {
-  background-color: #fff; 
-  padding: 20px; 
-  margin: center; 
-  border-radius: 5px; 
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); 
-}
 /* Account Form Styling */
 .account-form {
   /* ... (Your existing styles) ... */
@@ -162,14 +124,16 @@ form {
 
 #profile-picture-input {
   /* ... (Styles for the file input) ... */
-  display: none; /* Hide the file input element */
+  display: none;
+  /* Hide the file input element */
 }
 
-#profile-picture-input + label {
+#profile-picture-input+label {
   /* ... (Styles for the label that triggers file selection) ... */
   display: inline-block;
   padding: 8px 12px;
-  background-color: #4CAF50; /* Green */
+  background-color: #4CAF50;
+  /* Green */
   color: white;
   border: none;
   border-radius: 3px;
@@ -177,7 +141,7 @@ form {
 }
 
 #save-profile {
- 
+
   /* ... (Similar to your form submit button styles) ... */
 }
 
@@ -186,16 +150,9 @@ body {
   font-family: 'Arial', sans-serif;
   margin: 0;
   padding: 0;
-  background-color: #222; /* Dark Red Background */
+  background-color: #545454;
+  /* Dark Red Background */
 }
-
-/* Header & Logo Styling */
-header {
-  background-color: #333; /* Darker Red for header */
-  padding: 20px;
-  position: relative;
-}
-
 
 /* Page Title */
 .page-title {
@@ -207,7 +164,7 @@ header {
 
 /* About Content */
 .about-content {
-  background-color: #fff; /* White background for content */
+  background-color: darkred;
   padding: 40px;
   border-radius: 10px;
   margin: 50px auto;
@@ -215,18 +172,26 @@ header {
   text-align: center;
 }
 
+.about-content h1 {
+  text-align: center;
+  padding-bottom: 20px;
+  font-size: 42px;
+}
+
 /* Paragraph Styling */
 .about-content p {
   line-height: 1.6;
-  color: #333; /* Darker gray text */
+  color: #fff;
 }
+
 /* Contact Info Styling */
 .contact-info {
-  background-color: #fff; 
-  padding: 40px;
+  background-color: darkred;
+  color: #fff;
+  padding: 30px 40px;
   border-radius: 10px;
   margin: 50px auto;
-  max-width: 800px;
+  max-width: 500px;
 }
 
 .contact-info ul {
@@ -241,13 +206,20 @@ header {
 }
 
 .contact-info a {
-  color: darkblue;
+  color: black;
   text-decoration: none;
 }
 
 .contact-info a:hover {
   text-decoration: underline;
 }
+
+.contact-info h1 {
+  text-align: center;
+  padding-bottom: 20px;
+  font-size: 42px;
+}
+
 /* ... (Your existing styles) ... */
 
 .chatbot-container {
@@ -260,21 +232,30 @@ header {
   }
 }
 
+.message {
+  background-color: #521313;
+  /* Dark Red background */
+  color: white;
+  /* White text */
+  padding: 10px;
+  /* Padding around the message */
+  margin-bottom: 10px;
+  /* Spacing between messages */
+  border-radius: 5px;
+  /* Rounded corners */
+}
 
-  .message {
-    background-color: #521313; /* Dark Red background */
-    color: white; /* White text */
-    padding: 10px; /* Padding around the message */
-    margin-bottom: 10px; /* Spacing between messages */
-    border-radius: 5px; /* Rounded corners */
-  }
-
+.user {
   .user {
-    .user {
-      background-color: #2196F3; /* Blue background */
-      color: white; /* White text */
-      padding: 10px; /* Padding around the message */
-      margin-bottom: 10px; /* Spacing between messages */
-      border-radius: 5px; /* Rounded corners */
-    }
+    background-color: #2196F3;
+    /* Blue background */
+    color: white;
+    /* White text */
+    padding: 10px;
+    /* Padding around the message */
+    margin-bottom: 10px;
+    /* Spacing between messages */
+    border-radius: 5px;
+    /* Rounded corners */
   }
+}
