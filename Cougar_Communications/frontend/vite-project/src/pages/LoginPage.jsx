@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import logo from '../assets/images/logo.png';
+import axios from 'axios'; // Import axios for making HTTP requests
 
 function LoginPage() {
   const [formData, setFormData] = useState({
@@ -18,9 +19,23 @@ function LoginPage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    // Implement your login logic here
-    // For now, let's just redirect to the chat page
-    navigate('/chat');
+
+    try {
+      // Send login credentials to backend
+      const response = await axios.post('/api/login', formData);
+
+      // Check if login was successful based on response
+      if (response.status === 200) {
+        // Redirect to the chat page upon successful login
+        navigate('/chat');
+      } else {
+        console.error('Login failed');
+        // Handle login failure (show error message, etc.)
+      }
+    } catch (error) {
+      console.error('Error logging in:', error);
+      // Handle network errors or server-side errors
+    }
   };
 
   return (
@@ -37,7 +52,7 @@ function LoginPage() {
       </header>
 
       <div className="wrapper">
-        <form onSubmit={handleSubmit}> 
+        <form onSubmit={handleSubmit}>
           <h1>Login</h1>
           <div className="input-box">
             <input
@@ -66,7 +81,7 @@ function LoginPage() {
             <label>
               <input type="checkbox" /> Remember Me
             </label>
-            <Link to="/forgot-password">Forgot Password?</Link> 
+            <Link to="/forgot-password">Forgot Password?</Link>
           </div>
 
           <button type="submit" className="btn">Login</button>

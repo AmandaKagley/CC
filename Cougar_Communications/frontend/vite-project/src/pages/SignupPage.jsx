@@ -3,94 +3,111 @@ import { Link, useNavigate } from 'react-router-dom';
 import logo from '../assets/images/logo.png';
 
 function SignUpPage() {
-    const [formData, setFormData] = useState({
-        username: '',
-        password: '',
-        confirmPassword: '',
+  const [formData, setFormData] = useState({
+    username: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+  });
+  const navigate = useNavigate();
+
+  const handleChange = (event) => {
+    setFormData({
+      ...formData,
+      [event.target.name]: event.target.value
     });
-    const navigate = useNavigate();
+  };
 
-    const handleChange = (event) => {
-        setFormData({
-            ...formData,
-            [event.target.name]: event.target.value
-        });
-    };
+  const handleSubmit = async (event) => {
+    event.preventDefault();
 
-    const handleSubmit = (event) => {
-        event.preventDefault();
-        // Add your signup logic here (e.g., form validation, API call)
-        console.log('Form submitted:', formData);
-        // For now, let's just redirect to the login page
-        navigate('/');
-    };
+    // Validate email format
+    if (!isEmailValid(formData.email)) {
+      alert('Please enter a valid email ending with @my.stchas.edu');
+      return;
+    }
 
-    return (
-        <div>
-            <header>
-                <div className="header">
-                    <Link to="/" className="logo">
-                        <img src={logo} alt="Saint Charles Community College Logo" />
-                    </Link>
-                    <div className="header-right">
-                        <h1>Welcome to Cougar Communications</h1>
-                    </div>
-                </div>
-            </header>
+    try {
+      // Store the user's data to the database
+      const response = await fetch('/api/signup', {
+        method: 'POST',
+        body: JSON.stringify(formData),
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
 
-            <div className="wrapper">
-                <form onSubmit={handleSubmit}>
-                    <h1>Sign Up</h1>
-                    <div className="input-box">
-                        <input 
-                            type="text" 
-                            placeholder="Username" 
-                            name="username" 
-                            value={formData.username} 
-                            onChange={handleChange} 
-                            required 
-                        />
-                        <i className='bx bxs-user'></i>
-                    </div>
-                    <div className="input-box">
-                        <input 
-                            type="password" 
-                            placeholder="Password" 
-                            name="password"
-                            value={formData.password} 
-                            onChange={handleChange} 
-                            required 
-                        />
-                        <i className='bx bxs-lock-alt'></i>
-                    </div>
-                    <div className="input-box">
-                        <input 
-                            type="password" 
-                            placeholder="Confirm Password" 
-                            name="confirmPassword"
-                            value={formData.confirmPassword} 
-                            onChange={handleChange} 
-                            required 
-                        />
-                        <i className='bx bxs-lock-alt'></i>
-                    </div>
+      if (!response.ok) {
+        throw new Error('Error storing user data');
+      }
 
-                    <button type="submit" className="btn">Sign Up</button>
+      console.log('User data stored successfully');
+      // Redirect to the login page
+      navigate('/');
+    } catch (error) {
+      console.error('Error storing user data:', error);
+      // Handle error state or show error message to the user
+    }
+  };
 
-                    <div className="register-link">
-                        <p>Already have an account? <Link to="/">Login</Link></p>
-                    </div>
-                </form>
-            </div>
+  const isEmailValid = (email) => {
+    return email.endsWith('@my.stchas.edu');
+  };
 
-            <footer>
-                <div className="footer">
-                    <Link to="/contact">Contact</Link>
-                    <Link to="/about">About</Link>
-                </div>
-            </footer>
+  return (
+    <div className="signup-container">
+      <form onSubmit={handleSubmit}>
+        <img src={logo} alt="Logo" />
+        <h2>Create an Account</h2>
+        <div className="form-group">
+          <label htmlFor="username">Username</label>
+          <input
+            type="text"
+            id="username"
+            name="username"
+            value={formData.username}
+            onChange={handleChange}
+            required
+          />
         </div>
-    );
+        <div className="form-group">
+          <label htmlFor="email">Email</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        <div className="form-group">
+          <label htmlFor="password">Password</label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        <div className="form-group">
+          <label htmlFor="confirmPassword">Confirm Password</label>
+          <input
+            type="password"
+            id="confirmPassword"
+            name="confirmPassword"
+            value={formData.confirmPassword}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        <button type="submit">Sign Up</button>
+        <p>Already have an account? <Link to="/">Log In</Link></p>
+      </form>
+    </div>
+  );
 }
 
 export default SignUpPage;
