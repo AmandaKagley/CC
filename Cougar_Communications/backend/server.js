@@ -1,11 +1,10 @@
 const express = require("express");
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const dialogflow = require('@google-cloud/dialogflow');
 const sqlite3 = require('sqlite3').verbose();
-const multer = require('multer');
-const fs = require('fs');
 const path = require('path');
+const session = require('express-session');
+const WebSocket = require('ws');
 
 // SQLite database setup
 const db = new sqlite3.Database(path.join(__dirname, 'database', 'CC.db'));
@@ -13,118 +12,130 @@ const db = new sqlite3.Database(path.join(__dirname, 'database', 'CC.db'));
 const app = express();
 const port = 3000; // Single port for the server
 
-// Dialogflow Configuration
-const projectId = 'scc-student-chatbot';
-const sessionId = 'YOUR_SESSION_ID'; // Replace with a unique session ID
-const sessionClient = new dialogflow.SessionsClient();
-const sessionPath = sessionClient.projectAgentSessionPath(projectId, sessionId);
-
 // Middleware setup
 app.use(bodyParser.json());
 app.use(cors());
 app.use(express.static(path.join(__dirname)));
+app.use(session({ secret: 'your_secret_key', resave: false, saveUninitialized: true }));
 
-// Configure Multer for file uploads
-const upload = multer({ dest: 'uploads/' });
+const wss = new WebSocket.Server({ port: 8080 });
+
+wss.on('connection', (ws) => {
+  ws.on('message', (message) => {
+    // Broadcast to all connected clients
+    wss.clients.forEach(client => {
+      if (client !== ws && client.readyState === WebSocket.OPEN) {
+        client.send(message);
+      }
+    });
+  });
+});
 
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
 
-// Login route
-app.post('/login', (req, res) => {
-  const { username, password } = req.body;
-  // 1. Authenticate the user against your database
-  // 2. If authentication succeeds, create a session and send a success response
-  // 3. If authentication fails, send an error response
-});
-
 // Signup route
 app.post('/signup', (req, res) => {
   const { username, email, password } = req.body;
-  // 1. Validate the email (make sure it ends with "@my.stchas.edu")
-  // 2. Create a new user in your database
-  // 3. Send a success response
-});
-
-// Update profile route
-app.put('/update-profile', (req, res) => {
-  const { bio, classes } = req.body;
-  // 1. Update the user's profile in your database
-  // 2. Send a success response
-});
-
-// Chatbot route
-app.post('/chatbot', async (req, res) => {
-  const { query } = req.body;
-
-  // Create a Dialogflow request
-  const request = {
-    session: sessionPath,
-    queryInput: {
-      text: {
-        text: query,
-        languageCode: 'en-US',
-      },
-    },
-  };
-
-  try {
-    // Send the request to Dialogflow
-    const responses = await sessionClient.detectIntent(request);
-    const result = responses[0].queryResult;
-
-    // Get the chatbot's response
-    const chatbotResponse = result.fulfillmentText;
-
-    res.json({ response: chatbotResponse });
-  } catch (error) {
-    console.error('ERROR:', error);
-    res.status(500).send('Error processing request');
-  }
-});
-
-// Endpoint to handle profile picture upload
-app.post('/upload-profile-picture', upload.single('profilePicture'), (req, res) => {
-  const userId = req.body.userId;
-  const profilePicturePath = req.file.path;
-
-  // Read the image file and convert to binary
-  fs.readFile(profilePicturePath, (err, data) => {
+  const query = 'INSERT INTO Users (Username, Email, Password) VALUES (?, ?, ?)';
+  db.run(query, [username, email, password], function (err) {
     if (err) {
-      return res.status(500).send('Error reading file');
+      return res.status(500).json({ message: 'Signup Failed' });
     }
-
-    const updateQuery = `UPDATE Users SET ProfilePicture = ? WHERE UserID = ?`;
-    db.run(updateQuery, [data, userId], function (err) {
-      if (err) {
-        return res.status(500).send('Error updating profile picture');
-      }
-      // Delete the file after storing it in the database
-      fs.unlinkSync(profilePicturePath);
-      res.send('Profile picture updated successfully');
-    });
+    res.status(201).json({ message: 'Signup Successful' });
   });
 });
 
-// Endpoint to serve profile pictures
-app.get('/profile-picture/:userId', (req, res) => {
-  const userId = req.params.userId;
-  const query = `SELECT ProfilePicture FROM Users WHERE UserID = ?`;
-  db.get(query, [userId], (err, row) => {
-    if (err) {
-      return res.status(500).send('Error retrieving profile picture');
+// Login route
+app.post('/login', (req, res) => {
+  const { username, password, rememberMe } = req.body;
+  const query = 'SELECT * FROM Users WHERE Username = ? AND Password = ?';
+  db.get(query, [username, password], (err, row) => {
+    if (err || !row) {
+      return res.status(401).json({ message: 'Login Failed' });
     }
-    if (!row || !row.ProfilePicture) {
-      return res.status(404).send('Profile picture not found');
-    }
-    // Set the appropriate content type (assuming JPEG for this example)
-    res.setHeader('Content-Type', 'image/jpeg');
-    res.send(row.ProfilePicture);
+    req.session.userId = row.UserID;
+    res.status(200).json({ message: 'Login Successful' });
   });
 });
 
-// Serve the HTML file
+// Logout route
+app.post('/logout', (req, res) => {
+  req.session.destroy(err => {
+    if (err) {
+      return res.status(500).json({ message: 'Logout Failed' });
+    }
+    res.status(200).json({ message: 'Logout Successful' });
+  });
+});
+
+// Fetch friends and last messages
+app.get('/friends', (req, res) => {
+  const userId = req.session.userId;
+  const query = `
+    SELECT f.FriendID, u.Username, m.Text AS LastMessage, m.CreatedAt
+    FROM Friends f
+    JOIN Users u ON f.FriendID = u.UserID
+    LEFT JOIN Messages m ON (f.FriendID = m.SenderID OR f.FriendID = m.ReceiverID)
+    WHERE f.UserID = ?
+    ORDER BY m.CreatedAt DESC
+  `;
+  db.all(query, [userId], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ message: 'Failed to fetch friends' });
+    }
+    res.status(200).json(rows);
+  });
+});
+
+// Fetch chat messages
+app.get('/messages/:chatId', (req, res) => {
+  const chatId = req.params.chatId;
+  const query = 'SELECT * FROM Messages WHERE ChatID = ? ORDER BY CreatedAt ASC';
+  db.all(query, [chatId], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ message: 'Failed to fetch messages' });
+    }
+    res.status(200).json(rows);
+  });
+});
+
+// Send a new message
+app.post('/messages', (req, res) => {
+  const { chatId, senderId, text } = req.body;
+  const query = 'INSERT INTO Messages (ChatID, SenderID, Text, CreatedAt) VALUES (?, ?, ?, ?)';
+  db.run(query, [chatId, senderId, text, new Date().toISOString()], function (err) {
+    if (err) {
+      return res.status(500).json({ message: 'Failed to send message' });
+    }
+    res.status(201).json({ message: 'Message sent' });
+  });
+});
+
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
+});
+// Search for friends endpoint
+app.get('/search', (req, res) => {
+  const { query } = req.query;
+
+  if (!query) {
+    return res.status(400).json({ message: 'Search query is required' });
+  }
+
+  const sqlQuery = `
+    SELECT UserID, Username, Email
+    FROM Users
+    WHERE Username LIKE ?
+  `;
+
+  const params = [`%${query}%`];
+
+  db.all(sqlQuery, params, (err, rows) => {
+    if (err) {
+      return res.status(500).json({ message: 'Failed to search for friends' });
+    }
+    res.status(200).json(rows);
+  });
 });

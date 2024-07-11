@@ -15,6 +15,7 @@ CREATE TABLE Users (
     ProfilePicture BLOB
 );
 
+
 -- Stores friendship and requests 
 CREATE TABLE Friends (
     UserID INTEGER NOT NULL,
