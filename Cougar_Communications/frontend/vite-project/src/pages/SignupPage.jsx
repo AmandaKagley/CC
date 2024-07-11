@@ -2,98 +2,122 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import '../index.css';
-import { validateSignup } from './validation'; // Ensure this points to your validation file
+import { validateSignup } from './validation';
 import logo from '../assets/images/logo.png';
 
-function SignUpPage() {
-  const [formData, setFormData] = useState({
-    username: '',
-    password: '',
-    confirmPassword: '',
-  });
+const SignupPage = () => {
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleChange = (event) => {
-    setFormData({
-      ...formData,
-      [event.target.name]: event.target.value
+  const handleSignup = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    // Collect all errors
+    let allErrors = {...validateSignup(username, email, password, confirmPassword)};
+
+    try {
+      const response = await axios.post('http://localhost:3000/signup', {
+        username,
+        email,
+        password
+      });
+
+      if (response.status === 201) {
+        alert('Signup Successful');
+        navigate('/login');
+      }
+    } catch (error) {
+      if (error.response && error.response.data) {
+        const { message, field } = error.response.data;
+        allErrors[field] = message;
+      } else {
+        console.error('Signup error:', error);
+        allErrors.general = 'Signup Failed';
+      }
+    } finally {
+      setLoading(false);
+      setErrors(allErrors);
+    }
+
+    // If there are any errors, don't proceed
+    if (Object.keys(allErrors).length > 0) {
+      return;
+    }
+  };
+
+  const handleChange = (setter, field) => (e) => {
+    setter(e.target.value);
+    setErrors((prevErrors) => {
+      const newErrors = {...prevErrors};
+      delete newErrors[field];
+      return newErrors;
     });
   };
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    // Add your signup logic here (e.g., form validation, API call)
-    console.log('Form submitted:', formData);
-    // For now, let's just redirect to the login page
-    navigate('/');
-  };
-
   return (
-    <div>
-      <header>
-        <div className="header">
-          <Link to="/" className="logo">
-            <img src={logo} alt="Saint Charles Community College Logo" />
-          </Link>
-          <div className="header-right">
-            <h1>Welcome to Cougar Communications</h1>
-          </div>
-        </div>
-      </header>
-
-      <div className="wrapper">
-        <form onSubmit={handleSubmit}>
-          <h1>Sign Up</h1>
+    <div className="wrapper">
+      <button className="logo-button" onClick={() => navigate('/')}>
+        <img src={logo} alt="Logo" className="logo" />
+      </button>
+      <h1 className="header">Create Your Account</h1>
+      <div className="signup-container">
+        <form onSubmit={handleSignup}>
           <div className="input-box">
             <input
               type="text"
               placeholder="Username"
-              name="username"
-              value={formData.username}
-              onChange={handleChange}
+              value={username}
+              onChange={handleChange(setUsername, 'username')}
               required
             />
-            <i className='bx bxs-user'></i>
+            {errors.username && <p className="error">{errors.username}</p>}
+          </div>
+          <div className="input-box">
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={handleChange(setEmail, 'email')}
+              required
+            />
+            {errors.email && <p className="error">{errors.email}</p>}
           </div>
           <div className="input-box">
             <input
               type="password"
               placeholder="Password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
+              value={password}
+              onChange={handleChange(setPassword, 'password')}
               required
             />
-            <i className='bx bxs-lock-alt'></i>
+            {errors.password && <p className="error">{errors.password}</p>}
           </div>
           <div className="input-box">
             <input
               type="password"
               placeholder="Confirm Password"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
+              value={confirmPassword}
+              onChange={handleChange(setConfirmPassword, 'confirmPassword')}
               required
             />
-            <i className='bx bxs-lock-alt'></i>
+            {errors.confirmPassword && <p className="error">{errors.confirmPassword}</p>}
           </div>
-
-          <button type="submit" className="btn">Sign Up</button>
-
-          <div className="register-link">
-            <p>Already have an account? <Link to="/">Login</Link></p>
-          </div>
+          <button type="submit" className="btn" disabled={loading}>
+            {loading ? 'Signing Up...' : 'Sign Up'}
+          </button>
+          <p className="sign-in-link">
+            Already a member? <Link to="/login">Sign In</Link>
+          </p>
         </form>
       </div>
-
-      <footer>
-        <div className="footer">
-          <Link to="/contact">Contact</Link>
-          <Link to="/about">About</Link>
-        </div>
-      </footer>
     </div>
   );
-}
+};
 
-export default SignUpPage;
+export default SignupPage;

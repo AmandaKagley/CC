@@ -31,7 +31,7 @@ const LoginPage = () => {
 
       if (response.status === 200) {
         alert('Login Successful');
-        navigate('/ChatPage');
+        navigate('/chat');
       } else {
         alert('Login Failed');
       }
@@ -95,4 +95,3 @@ const LoginPage = () => {
 };
 
 export default LoginPage;
-

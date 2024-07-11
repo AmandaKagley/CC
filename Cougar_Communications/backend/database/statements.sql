@@ -15,7 +15,6 @@ CREATE TABLE Users (
     ProfilePicture BLOB
 );
 
-
 -- Stores friendship and requests 
 CREATE TABLE Friends (
     UserID INTEGER NOT NULL,
@@ -118,3 +117,9 @@ JOIN
     Users u ON m.SenderID = u.UserID
 ORDER BY 
     gc.GroupID, m.Timestamp;
+
+
+SELECT * FROM Users;
+
+
+

@@ -14,7 +14,10 @@ const port = 3000; // Single port for the server
 
 // Middleware setup
 app.use(bodyParser.json());
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:5173', // or whatever port your React app is running on
+  credentials: true
+}));
 app.use(express.static(path.join(__dirname)));
 app.use(session({ secret: 'your_secret_key', resave: false, saveUninitialized: true }));
 
@@ -38,14 +41,43 @@ app.listen(port, () => {
 // Signup route
 app.post('/signup', (req, res) => {
   const { username, email, password } = req.body;
-  const query = 'INSERT INTO Users (Username, Email, Password) VALUES (?, ?, ?)';
-  db.run(query, [username, email, password], function (err) {
+  
+  // Perform server-side validation
+  if (!username || !email || !password) {
+    return res.status(400).json({ message: 'All fields are required' });
+  }
+  
+  // Check if the email ends with @my.stchas.edu
+  if (!email.endsWith('@my.stchas.edu')) {
+    return res.status(400).json({ message: 'Invalid email domain', field: 'email' });
+  }
+
+  // Check if the user already exists
+  db.get('SELECT * FROM Users WHERE Email = ? OR Username = ?', [email, username], (err, row) => {
     if (err) {
-      return res.status(500).json({ message: 'Signup Failed' });
+      return res.status(500).json({ message: 'Database error' });
     }
-    res.status(201).json({ message: 'Signup Successful' });
+    if (row) {
+      if (row.Email === email) {
+        return res.status(409).json({ message: 'Email already in use', field: 'email' });
+      }
+      if (row.Username === username) {
+        return res.status(409).json({ message: 'Username already taken', field: 'username' });
+      }
+    }
+
+    // If user doesn't exist, insert the new user
+    const query = 'INSERT INTO Users (Username, Email, Password) VALUES (?, ?, ?)';
+    db.run(query, [username, email, password], function (err) {
+      if (err) {
+        console.error('Signup error:', err);
+        return res.status(500).json({ message: 'Signup Failed' });
+      }
+      res.status(201).json({ message: 'Signup Successful', userId: this.lastID });
+    });
   });
 });
+
 
 // Login route
 app.post('/login', (req, res) => {
