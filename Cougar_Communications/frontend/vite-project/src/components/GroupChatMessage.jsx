@@ -1,19 +1,26 @@
-// src/components/GroupChatMessage.jsx
-
 import React, { useEffect, useState } from "react";
 import axios from 'axios';
 import './GroupChatMessage.css';
 
-const GroupChatMessage = ({ groupId, currentUserId }) => {
+const GroupChatMessage = ({ groupId, currentUserId, fetchMessages, latestMessage }) => {
     const [messages, setMessages] = useState([]);
 
     useEffect(() => {
         if (groupId) {
-            fetchMessages();
+            fetchMessagesFromServer();
         }
-    }, [groupId]);
+    }, [groupId, fetchMessages]);
 
-    const fetchMessages = async () => {
+    useEffect(() => {
+        if (latestMessage && latestMessage.GroupID === groupId) {
+            // Check if the message already exists to avoid duplicates
+            if (!messages.some(msg => msg.MessageID === latestMessage.MessageID)) {
+                setMessages(prevMessages => [...prevMessages, latestMessage]);
+            }
+        }
+    }, [latestMessage, groupId, messages]);
+
+    const fetchMessagesFromServer = async () => {
         try {
             const response = await axios.get(`http://localhost:3000/messages/${groupId}`);
             setMessages(response.data);
@@ -22,20 +29,13 @@ const GroupChatMessage = ({ groupId, currentUserId }) => {
         }
     };
 
-    // Debug function to log message details
-    const logMessageDetails = (message) => {
-        console.log(`Message SenderID: ${message.SenderID}, CurrentUserID: ${currentUserId}`);
-        console.log(`Is sender current user? ${message.SenderID === currentUserId}`);
-    };
-
     return (
         <div className="chat-messages">
             {messages.map((message, index) => {
-                logMessageDetails(message);
                 const isCurrentUser = String(message.SenderID) === String(currentUserId);
                 return (
                     <div 
-                        key={index} 
+                        key={message.MessageID || index} 
                         className={`chat-message ${isCurrentUser ? 'right' : 'left'}`}
                     >
                         <img 

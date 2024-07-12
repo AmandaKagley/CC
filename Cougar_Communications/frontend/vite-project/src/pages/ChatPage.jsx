@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import logo from '../assets/images/logo.png';
@@ -11,6 +11,7 @@ import dodrio from '../assets/images/dodrio.png';
 import GroupChatItem from '../components/GroupChatItem';
 import GroupChatMessage from '../components/GroupChatMessage';
 import { validateLogin, setUserAuth, getUserAuth, isAuthenticated } from './validation';
+
 import './ChatPage.css';
 
 function ChatPage() {
@@ -19,6 +20,9 @@ function ChatPage() {
   const [chatMinimized, setChatMinimized] = useState(false);
   const [groupChats, setGroupChats] = useState([]);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [fetchMessages, setFetchMessages] = useState(false); // New state to control message fetching
+  const [socket, setSocket] = useState(null);
+  const socketRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -28,18 +32,93 @@ function ChatPage() {
       navigate('/login');
     } else {
       fetchGroupChats();
+      
+      // Establish WebSocket connection with user ID
+      const ws = new WebSocket(`ws://localhost:8080?userId=${userId}`);
+      setSocket(ws);
+      socketRef.current = ws;
+  
+      ws.onopen = () => {
+        console.log('WebSocket connection established');
+      };
+  
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.type === 'newMessage') {
+          handleNewMessage(data.message);
+        }
+      };
+  
+      return () => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.close();
+        }
+      };
     }
   }, [navigate]);
 
-  const handleSendMessage = (e) => {
-    e.preventDefault();
-    if (inputMessage.trim() !== '') {
-      // Here you would typically send the message to the server
-      // For now, we'll just clear the input
-      setInputMessage('');
+  const [latestMessage, setLatestMessage] = useState(null);
+
+  const handleNewMessage = (newMessage) => {
+    // Only update if the message is not from the current user
+    if (String(newMessage.SenderID) !== String(currentUserId)) {
+      setGroupChats(prevChats => {
+        return prevChats.map(chat => {
+          if (chat.groupId === newMessage.GroupID) {
+            return {
+              ...chat,
+              lastMessage: newMessage.Message,
+              lastMessageTime: newMessage.Timestamp
+            };
+          }
+          return chat;
+        });
+      });
+  
+      // Set the latest message
+      setLatestMessage(newMessage);
+  
+      // If the new message belongs to the currently selected chat, update it
+      if (selectedChat && selectedChat.groupId === newMessage.GroupID) {
+        setLatestMessage(newMessage);
+      }
     }
   };
+  
 
+
+  
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (inputMessage.trim() !== '' && selectedChat && currentUserId) {
+      try {
+        const response = await axios.post('http://localhost:3000/messages', {
+          groupId: selectedChat.groupId,
+          senderId: currentUserId,
+          message: inputMessage.trim(),
+          timestamp: new Date().toISOString()
+        });
+  
+        if (response.status === 201) {
+          console.log('Message sent successfully');
+          // Use the newMessage object returned from the server
+          const { newMessage } = response.data;
+          setLatestMessage(newMessage);
+          // Update the group chat list
+          setGroupChats(prevChats => prevChats.map(chat => 
+            chat.groupId === newMessage.GroupID 
+              ? {...chat, lastMessage: newMessage.Message, lastMessageTime: newMessage.Timestamp}
+              : chat
+          ));
+          setInputMessage('');
+        }
+      } catch (error) {
+        console.error('Error sending message:', error);
+      }
+    }
+  };
+  
   const handleMinimizeChat = () => {
     setChatMinimized(!chatMinimized);
   };
@@ -122,7 +201,12 @@ function ChatPage() {
                 <img className="profile-image" src={selectedChat.senderProfilePicture || selectedChat.img} alt="" />
                 <h4>{selectedChat.groupName || selectedChat.name}</h4>
               </div>
-              <GroupChatMessage groupId={selectedChat.groupId} currentUserId={currentUserId} />
+                <GroupChatMessage 
+                  groupId={selectedChat.groupId} 
+                  currentUserId={currentUserId} 
+                  fetchMessages={fetchMessages}
+                  latestMessage={latestMessage}
+                />
               <form onSubmit={handleSendMessage} className="message-input">
                 <input
                   type="text"

@@ -27,12 +27,12 @@ export const validateLogin = (username, password) => {
 };
 
 // Auth utilities
-export const setUserAuth = (userId) => {
-  localStorage.setItem('userId', userId);
+export const getUserAuth = () => {
+  return sessionStorage.getItem('userId');
 };
 
-export const getUserAuth = () => {
-  return localStorage.getItem('userId');
+export const setUserAuth = (userId) => {
+  sessionStorage.setItem('userId', userId);
 };
 
 export const removeUserAuth = () => {

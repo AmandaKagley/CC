@@ -32,14 +32,16 @@ app.use(session({
 
 const wss = new WebSocket.Server({ port: 8080 });
 
-wss.on('connection', (ws) => {
-  ws.on('message', (message) => {
-    // Broadcast to all connected clients
-    wss.clients.forEach(client => {
-      if (client !== ws && client.readyState === WebSocket.OPEN) {
-        client.send(message);
-      }
-    });
+const clients = new Map();
+
+wss.on('connection', (ws, req) => {
+  const userId = new URL(req.url, 'http://localhost:8080').searchParams.get('userId');
+  clients.set(userId, ws);
+
+  console.log(`New WebSocket connection for user ${userId}`);
+
+  ws.on('close', () => {
+    clients.delete(userId);
   });
 });
 
@@ -169,14 +171,48 @@ app.get('/messages/:groupId', (req, res) => {
 });
 
 // Send a new message
+
 app.post('/messages', (req, res) => {
-  const { chatId, senderId, text } = req.body;
-  const query = 'INSERT INTO Messages (ChatID, SenderID, Text, CreatedAt) VALUES (?, ?, ?, ?)';
-  db.run(query, [chatId, senderId, text, new Date().toISOString()], function (err) {
+  const { groupId, senderId, message, timestamp } = req.body;
+  
+  const query = 'INSERT INTO Messages (GroupID, SenderID, Message, Timestamp) VALUES (?, ?, ?, ?)';
+  
+  db.run(query, [groupId, senderId, message, timestamp], function(err) {
     if (err) {
+      console.error('Error inserting message:', err);
       return res.status(500).json({ message: 'Failed to send message' });
     }
-    res.status(201).json({ message: 'Message sent' });
+    
+    // Fetch the sender's information
+    db.get('SELECT Username, ProfilePicture FROM Users WHERE UserID = ?', [senderId], (err, user) => {
+      if (err) {
+        console.error('Error fetching user info:', err);
+        return res.status(500).json({ message: 'Failed to fetch user info' });
+      }
+
+      // Return the newly created message with sender info
+      const newMessage = {
+        MessageID: this.lastID,
+        GroupID: groupId,
+        SenderID: senderId,
+        SenderUsername: user.Username,
+        SenderProfilePicture: user.ProfilePicture,
+        Message: message,
+        Timestamp: timestamp
+      };
+    
+      // Broadcast the new message to all connected WebSocket clients
+      clients.forEach((clientWs, clientUserId) => {
+        if (clientUserId !== senderId.toString() && clientWs.readyState === WebSocket.OPEN) {
+          clientWs.send(JSON.stringify({
+            type: 'newMessage',
+            message: newMessage
+          }));
+        }
+      });
+    
+      res.status(201).json({ message: 'Message sent successfully', newMessage });
+    });
   });
 });
 
