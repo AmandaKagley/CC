@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import '../index.css'; // Ensure this file contains the required styles
-import { validateLogin } from './validation';
+import '../index.css';
+import { validateLogin, setUserAuth } from './validation';
 import logo from '../assets/images/logo.png';
 
 const LoginPage = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false); // State for Remember Me
+  const [rememberMe, setRememberMe] = useState(false);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -26,18 +26,18 @@ const LoginPage = () => {
       const response = await axios.post('http://localhost:3000/login', {
         username,
         password,
-        rememberMe, // Send rememberMe state
-      });
+        rememberMe,
+      }, { withCredentials: true });
 
-      if (response.status === 200) {
-        alert('Login Successful');
+      if (response.data.userId) {
+        setUserAuth(response.data.userId);
         navigate('/chat');
       } else {
-        alert('Login Failed');
+        alert('Login Failed: No user ID received');
       }
     } catch (error) {
       console.error('Login error:', error);
-      alert('Login Failed');
+      alert('Login Failed: ' + (error.response?.data?.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }

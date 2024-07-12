@@ -19,7 +19,16 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.static(path.join(__dirname)));
-app.use(session({ secret: 'your_secret_key', resave: false, saveUninitialized: true }));
+app.use(session({
+  secret: 'your_secret_key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { 
+    secure: process.env.NODE_ENV === "production", // false for development
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
 
 const wss = new WebSocket.Server({ port: 8080 });
 
@@ -81,14 +90,26 @@ app.post('/signup', (req, res) => {
 
 // Login route
 app.post('/login', (req, res) => {
-  const { username, password, rememberMe } = req.body;
+  const { username, password } = req.body;
   const query = 'SELECT * FROM Users WHERE Username = ? AND Password = ?';
   db.get(query, [username, password], (err, row) => {
-    if (err || !row) {
-      return res.status(401).json({ message: 'Login Failed' });
+    if (err) {
+      console.error('Database error during login:', err);
+      return res.status(500).json({ message: 'Internal server error' });
     }
+    if (!row) {
+      return res.status(401).json({ message: 'Invalid username or password' });
+    }
+    
+    // Log the user data for debugging
+    console.log('User found:', row);
+    
     req.session.userId = row.UserID;
-    res.status(200).json({ message: 'Login Successful' });
+    res.status(200).json({ 
+      message: 'Login Successful', 
+      userId: row.UserID,
+      username: row.Username
+    });
   });
 });
 
@@ -122,12 +143,26 @@ app.get('/friends', (req, res) => {
 });
 
 // Fetch chat messages
-app.get('/messages/:chatId', (req, res) => {
-  const chatId = req.params.chatId;
-  const query = 'SELECT * FROM Messages WHERE ChatID = ? ORDER BY CreatedAt ASC';
-  db.all(query, [chatId], (err, rows) => {
+app.get('/messages/:groupId', (req, res) => {
+  const groupId = req.params.groupId;
+  const query = `
+    SELECT 
+      m.MessageID,
+      m.GroupID,
+      m.SenderID,
+      u.Username as SenderUsername,
+      u.ProfilePicture as SenderProfilePicture,
+      m.Message,
+      m.Timestamp
+    FROM Messages m
+    JOIN Users u ON m.SenderID = u.UserID
+    WHERE m.GroupID = ?
+    ORDER BY m.Timestamp ASC
+  `;
+  db.all(query, [groupId], (err, rows) => {
     if (err) {
-      return res.status(500).json({ message: 'Failed to fetch messages' });
+      console.error('Error fetching messages:', err);
+      return res.status(500).json({ message: 'Failed to fetch messages', error: err.message });
     }
     res.status(200).json(rows);
   });
@@ -167,6 +202,40 @@ app.get('/search', (req, res) => {
   db.all(sqlQuery, params, (err, rows) => {
     if (err) {
       return res.status(500).json({ message: 'Failed to search for friends' });
+    }
+    res.status(200).json(rows);
+  });
+});
+
+app.get('/user-group-chats/:userId', (req, res) => {
+  const userId = req.params.userId;
+  
+  const query = `
+    SELECT 
+      gc.GroupID as groupId, 
+      gc.GroupName as groupName, 
+      m.Message as lastMessage, 
+      m.Timestamp as lastMessageTime,
+      u.ProfilePicture as senderProfilePicture
+    FROM GroupChats gc
+    JOIN GroupMembers gm ON gc.GroupID = gm.GroupID
+    LEFT JOIN (
+      SELECT 
+        GroupID, 
+        Message, 
+        Timestamp, 
+        SenderID,
+        ROW_NUMBER() OVER (PARTITION BY GroupID ORDER BY Timestamp DESC) as rn
+      FROM Messages
+    ) m ON gc.GroupID = m.GroupID AND m.rn = 1
+    LEFT JOIN Users u ON m.SenderID = u.UserID
+    WHERE gm.UserID = ?
+    ORDER BY m.Timestamp DESC NULLS LAST
+  `;
+
+  db.all(query, [userId], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ message: 'Failed to fetch group chats' });
     }
     res.status(200).json(rows);
   });

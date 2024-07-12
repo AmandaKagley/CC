@@ -1,5 +1,6 @@
 // validation.js
 
+// Validation functions
 export const validateSignup = (username, email, password, confirmPassword) => {
   const errors = {};
 
@@ -18,10 +19,26 @@ export const validateSignup = (username, email, password, confirmPassword) => {
   return errors;
 };
 
-// Add similar validation for login if needed
 export const validateLogin = (username, password) => {
   const errors = {};
   if (!username) errors.username = 'Username is required';
   if (!password) errors.password = 'Password is required';
   return errors;
+};
+
+// Auth utilities
+export const setUserAuth = (userId) => {
+  localStorage.setItem('userId', userId);
+};
+
+export const getUserAuth = () => {
+  return localStorage.getItem('userId');
+};
+
+export const removeUserAuth = () => {
+  localStorage.removeItem('userId');
+};
+
+export const isAuthenticated = () => {
+  return !!getUserAuth();
 };
