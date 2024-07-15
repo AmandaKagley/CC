@@ -5,7 +5,7 @@ import axios from 'axios';
 import logo from '../assets/images/logo.png';
 import GroupChatItem from '../components/GroupChatItem';
 import GroupChatMessage from '../components/GroupChatMessage';
-import { getUserAuth } from './validation';
+import { getUserAuth, removeUserAuth } from './validation';
 
 import './ChatPage.css';
 
@@ -150,6 +150,7 @@ function ChatPage() {
 
   return (
     <div className="chat-page">
+      <title>Chat</title>
       <header className="header">
         <div className="header-left">
           <Link to="/" className="logo">

@@ -1,207 +1,113 @@
 /* General Styles */
 body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background-color: #2e1a1a; /* Dark maroon background */
-    color: white;
-  }
-  
-  /* Header Styles */
-  .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 20px;
-    background-color: #1a0a0a; /* Darker maroon */
-    border-bottom: 1px solid #3b1c1c; /* Border for separation */
-    position: fixed; /* Fix header at the top */
-    width: 100%;
-    top: 0;
-    left: 0;
-    z-index: 1000; /* Ensure header stays on top */
-  }
-  
-  .header-left {
-    display: flex;
-    align-items: center;
-  }
-  
-  .logo img {
-    height: 40px;
-  }
-  
-  .header h1 {
-    margin: 0;
-    font-size: 24px;
-    margin-left: 10px;
-  }
-  
-  .logout-button {
-    background-color: #b33a3a; /* Logout button color */
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    cursor: pointer;
-    border-radius: 5px;
-  }
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background-color: #2e1a1a; /* Dark maroon background */
+  color: white;
+  overflow: hidden; /* Prevent scrolling on body */
+}
 
-  .chat-button {
-    background-color: #b33a3a; /* Chat button color */
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    cursor: pointer;
-    border-radius: 5px;
-    margin-right: 10px; /* Space between buttons */  
-  }
-  
-  /* Main Content Styles */
-  .main-content {
-    display: flex;
-    height: calc(100vh - 60px); /* Adjust height to fit header */
-    margin-top: 60px; /* Space for the header */
-  }
-  
-  /* Friends Bar Styles */
-  .friends-bar {
-    width: 250px;
-    background-color: #1a0a0a;
-    overflow-y: auto;
-    border-right: 1px solid #3b1c1c;
-    padding: 10px;
-    height: 100%; /* Fill remaining height */
-  }
-  
-  /* Adjusted Friends Item Styles */
-  .friend-item {
-    display: flex;
-    align-items: center;
-    padding: 10px;
-    cursor: pointer;
-    border-radius: 5px;
-    margin-bottom: 10px;
-    transition: background-color 0.3s ease;
-  }
-  
-  .friend-item:hover {
-    background-color: #3b1c1c;
-  }
-  
-  .friend-item.selected {
-    background-color: #3b1c1c;
-  }
-  
-  .profile-image {
-    width: 30px; /* Smaller profile images */
-    height: 30px;
-    border-radius: 50%;
-  }
-  
-  .friend-info {
-    margin-left: 10px;
-    flex: 1;
-  }
-  
-  .friend-info h6 {
-    margin: 0;
-  }
-  
-  .friend-info p {
-    margin: 0;
-    color: #bbb;
-  }
-  
-  .time {
-    font-size: 12px;
-    color: #bbb;
-  }
-  
-  /* Chat Area Styles */
-  .chat-area {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    background-color: #2e1a1a;
-    padding: 10px;
-    height: 100%;
-    border: 1px solid #000; /* Black border */
-    overflow: hidden; /* Prevent content from overflowing */
-  }
-  
-  /* Minimize Chat Button Styles */
-  .minimize-chat-button {
-    background-color: #3b1c1c;
-    color: white;
-    border: none;
-    padding: 8px;
-    cursor: pointer;
-    border-radius: 5px;
-    margin-bottom: 10px;
-  }
-  
-  /* Chat Header Styles */
-  .chat-header {
-    border-bottom: 1px solid #3b1c1c;
-    padding-bottom: 10px;
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
-  }
-  
-  .chat-header img {
-    width: 30px; /* Smaller profile images */
-    height: 30px;
-    border-radius: 50%;
-    margin-right: 10px;
-  }
-  
-  .chat-messages {
-    flex: 1;
-    overflow-y: auto;
-    margin-bottom: 10px;
-  }
-  
-  .chat-message {
-    padding: 10px;
-    border-radius: 10px;
-    margin-bottom: 10px;
-    max-width: 70%;
-    word-wrap: break-word;
-    color: white;
-    display: flex;
-    align-items: center;
-  }
-  
-  .chat-message.left {
-    background-color: #1a0a0a;
-  }
-  
-  .chat-message.right {
-    background-color: #b33a3a;
-    margin-left: auto;
-  }
-  
-  .message-input {
-    display: flex;
-    align-items: center;
-  }
-  
-  .message-input input {
-    flex: 1;
-    padding: 10px;
-    border: 2px solid #3b1c1c; /* Thicker border */
-    border-radius: 5px;
-    background-color: #2e1a1a;
-    color: white;
-  }
-  
-  .send-button {
-    background-color: #b33a3a; /* Send button color */
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    cursor: pointer;
-    border-radius: 5px;
-    margin-left: 10px;
-  }
-  
+/* Header Styles */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  background-color: #1a0a0a; /* Darker maroon */
+  border-bottom: 1px solid #3b1c1c; /* Border for separation */
+  position: fixed; /* Fix header at the top */
+  width: 100%;
+  top: 0;
+  left: 0;
+  z-index: 1000; /* Ensure header stays on top */
+}
+
+.header div {
+  display: flex;
+  gap: 10px;
+}
+
+/* Logout Button Styles */
+.logout-button,
+.chat-page-button {
+  background-color: #8b0000; /* Dark red color */
+  color: white;
+  border: 1px solid #600000; /* Darker red border */
+  padding: 10px 20px;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: background-color 0.3s, border 0.3s; /* Smooth transition */
+}
+
+.logout-button:hover,
+.chat-page-button:hover {
+  background-color: #a30000; /* Lighter dark red on hover */
+  border: 1px solid #8b0000; /* Dark red border on hover */
+}
+
+/* Main Content Styles */
+.profile-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: calc(100vh - 60px); /* Adjust height to fit header */
+  margin-top: 60px; /* Space for the header */
+  position: relative;
+}
+
+/* Profile Picture Container Styles */
+.profile-picture-container {
+  position: absolute;
+  top: 80px; /* Space below the header */
+  left: 20px;
+  background-color: white; /* White background for the container */
+  padding: 20px;
+  border-radius: 10px;
+  text-align: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Optional shadow for better appearance */
+}
+
+.profile-picture {
+  width: 150px; /* Adjust size as needed */
+  height: 150px;
+  border-radius: 50%;
+  object-fit: cover; /* Ensure image covers the area */
+}
+
+input[type="file"] {
+  margin-top: 10px;
+}
+
+/* Profile Container Styles */
+.profile-container {
+  background-color: grey; /* Grey background for the container */
+  padding: 30px;
+  border-radius: 40px;
+  text-align: center;
+  box-shadow: 5px 47px 810px rgba(0, 0, 0, 0.881); /* Optional shadow for better appearance */
+  color: black; /* Set text color to black inside the container */
+  max-width: 800px; /* Max width for better appearance */
+  width: 100%; /* Ensure it takes up most of the page */
+}
+
+.bio-textarea {
+  width: 100%;
+  margin-top: 20px;
+  padding: 10px;
+  border: 1px solid #3b1c1c;
+  border-radius: 5px;
+}
+
+.save-bio-button {
+  margin-top: 10px;
+  background-color: #4b0000; /* Deep Maroon color */
+  color: white;
+  border: none;
+  cursor: pointer;
+  padding: 10px 20px;
+  border-radius: 5px;
+}
+
+.save-bio-button:hover {
+  background-color: #6c0000; /* Slightly lighter maroon on hover */
+}
