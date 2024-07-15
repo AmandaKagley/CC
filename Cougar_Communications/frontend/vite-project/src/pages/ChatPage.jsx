@@ -159,7 +159,7 @@ function ChatPage() {
           <h1>Cougar Communications</h1>
         </div>
         <div className="header-right">
-          <button className="profile-button" onClick={() => navigate('/profile')}>Profile</button>
+          <button className="logout-button" onClick={() => navigate('/profile')}>Profile</button>
           <button className="logout-button" onClick={() => navigate('/login')}>Logout</button>
         </div>
       </header>
@@ -167,22 +167,22 @@ function ChatPage() {
       <div className="main-content">
         <div className="friends-bar">
           <div className="friends-list">
-          {groupChats.map((chat) => (
-            <GroupChatItem
-              key={chat.groupId}
-              groupName={chat.groupName}
-              lastMessage={chat.lastMessage}
-              lastMessageTime={formatTimestamp(chat.lastMessageTime)}
-              lastMessageSenderId={chat.lastMessageSenderId}
-              isSelected={selectedChat && selectedChat.groupId === chat.groupId}
-              onClick={() => handleChatSelect(chat)}
-            />
-          ))}
+            {groupChats.map((chat) => (
+              <GroupChatItem
+                key={chat.groupId}
+                groupName={chat.groupName}
+                lastMessage={chat.lastMessage}
+                lastMessageTime={formatTimestamp(chat.lastMessageTime)}
+                lastMessageSenderId={chat.lastMessageSenderId}
+                isSelected={selectedChat && selectedChat.groupId === chat.groupId}
+                onClick={() => handleChatSelect(chat)}
+              />
+            ))}
           </div>
         </div>
 
         <div className="chat-area">
-          {selectedChat && (
+          {selectedChat ? (
             <>
               <div className="chat-header">
                 <h4>{selectedChat.groupName}</h4>
@@ -203,6 +203,10 @@ function ChatPage() {
                 <button type="submit" className="send-button">Send</button>
               </form>
             </>
+          ) : (
+            <div className="no-chat-selected">
+              <p>Select a chat to start messaging</p>
+            </div>
           )}
         </div>
       </div>
