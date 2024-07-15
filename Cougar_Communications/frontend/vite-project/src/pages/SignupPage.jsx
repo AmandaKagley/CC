@@ -4,6 +4,7 @@ import axios from 'axios';
 import '../index.css';
 import { validateSignup } from './validation';
 import logo from '../assets/images/logo.png';
+import defaultProfilePicture from '../assets/images/blank-profile-picture.png'; //Defult Profile Picture, called during user Signup
 
 const SignupPage = () => {
   const [username, setUsername] = useState('');
@@ -12,24 +13,47 @@ const SignupPage = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [profilePicture, setProfilePicture] = useState(defaultProfilePicture);
   const navigate = useNavigate();
 
   const handleSignup = async (e) => {
     e.preventDefault();
     setLoading(true);
-
+  
     // Collect all errors
     let allErrors = {...validateSignup(username, email, password, confirmPassword)};
-
+  
     try {
-      const response = await axios.post('http://localhost:3000/signup', {
+      const signupResponse = await axios.post('http://localhost:3000/signup', {
         username,
         email,
         password
       });
-
-      if (response.status === 201) {
-        alert('Signup Successful');
+  
+      if (signupResponse.status === 201) {
+        const userId = signupResponse.data.userId;
+  
+        // Now upload the default profile picture
+        const formData = new FormData();
+        formData.append('userId', userId);
+  
+        // Convert the default profile picture to a Blob
+        const response = await fetch(defaultProfilePicture);
+        const blob = await response.blob();
+        formData.append('profilePicture', blob, 'default-profile-picture.png');
+  
+        try {
+          await axios.post('http://localhost:3000/upload-profile-picture', formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            }
+          });
+          console.log('Default profile picture uploaded successfully');
+        } catch (uploadError) {
+          console.error('Error uploading default profile picture:', uploadError);
+        }
+  
+        alert('Signup Successful! You can now login.');
         navigate('/login');
       }
     } catch (error) {
@@ -44,13 +68,12 @@ const SignupPage = () => {
       setLoading(false);
       setErrors(allErrors);
     }
-
+  
     // If there are any errors, don't proceed
     if (Object.keys(allErrors).length > 0) {
       return;
     }
   };
-
   const handleChange = (setter, field) => (e) => {
     setter(e.target.value);
     setErrors((prevErrors) => {

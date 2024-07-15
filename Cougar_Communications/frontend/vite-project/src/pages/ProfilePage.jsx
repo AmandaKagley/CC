@@ -3,14 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './ProfilePage.css';
 import { getUserAuth } from './validation';
+import defaultProfilePicture from '../assets/images/blank-profile-picture.png'; // Import the default image
 
 const ProfilePage = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
-  const [profilePicture, setProfilePicture] = useState(null);
   const [bio, setBio] = useState('');
+  const [profilePicture, setProfilePicture] = useState(defaultProfilePicture);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -25,7 +26,9 @@ const ProfilePage = () => {
       try {
         const response = await axios.get(`http://localhost:3000/user/${userId}`);
         setUser(response.data);
-        setBio(response.data.bio || '');
+        // Set the bio from the user data, or an empty string if it's null
+        setBio(response.data.Bio || '');
+        loadProfilePicture(userId);
       } catch (err) {
         console.error('Error fetching user profile:', err);
         setError('Failed to load user profile');
@@ -37,23 +40,38 @@ const ProfilePage = () => {
     fetchUserProfile();
   }, [navigate]);
 
+  const loadProfilePicture = async (userId) => {
+    try {
+      const response = await axios.get(`http://localhost:3000/profile-picture/${userId}`, {
+        responseType: 'blob'
+      });
+      const imageUrl = URL.createObjectURL(response.data);
+      setProfilePicture(imageUrl);
+    } catch (err) {
+      console.error('Error loading profile picture:', err);
+      setProfilePicture(defaultProfilePicture);
+    }
+  };
+
   const handleProfilePictureUpload = async (event) => {
     const file = event.target.files[0];
     const formData = new FormData();
     formData.append('profilePicture', file);
+    formData.append('userId', currentUserId);
 
     try {
-      const response = await axios.post(`http://localhost:3000/user/upload-profile-picture`, formData, {
+      const response = await axios.post('http://localhost:3000/upload-profile-picture', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       });
 
       if (response.status === 200) {
-        setProfilePicture(response.data.profilePicture);
+        await loadProfilePicture(currentUserId);
       }
     } catch (err) {
       console.error('Error uploading profile picture:', err);
+      setError('Failed to upload profile picture');
     }
   };
 
@@ -64,8 +82,12 @@ const ProfilePage = () => {
   const handleBioSave = async () => {
     try {
       await axios.put(`http://localhost:3000/user/${currentUserId}/bio`, { bio });
+      alert('Bio updated successfully');
+      // Update the user state to reflect the new bio
+      setUser(prevUser => ({ ...prevUser, Bio: bio }));
     } catch (err) {
       console.error('Error saving bio:', err);
+      setError('Failed to save bio');
     }
   };
 
@@ -79,14 +101,18 @@ const ProfilePage = () => {
       <header className="header">
         <h1>User Profile</h1>
         <div>
-        <button className="chat-page-button" onClick={() => navigate('/chat')}>Chat Page</button>
+          <button className="chat-page-button" onClick={() => navigate('/chat')}>Chat Page</button>
           <button className="logout-button" onClick={() => navigate('/login')}>Logout</button>          
         </div>
       </header>
       <div className="profile-content">
         <div className="profile-picture-container">
-          <img src={profilePicture || user.ProfilePicture || 'default-profile-pic.png'} alt="Profile" className="profile-picture" />
-          <input type="file" onChange={handleProfilePictureUpload} />
+          <img 
+            src={profilePicture}
+            alt="Profile" 
+            className="profile-picture"
+          />
+          <input type="file" onChange={handleProfilePictureUpload} accept="image/*" />
         </div>
         <div className="profile-container">
           <h2>{user.Username}</h2>

@@ -62,23 +62,21 @@ function ChatPage() {
   };
 
   const handleNewMessage = (newMessage) => {
-    if (String(newMessage.SenderID) !== String(currentUserId)) {
-      setGroupChats(prevChats => {
-        return prevChats.map(chat => {
-          if (chat.groupId === newMessage.GroupID) {
-            return {
-              ...chat,
-              lastMessage: newMessage.Message,
-              lastMessageTime: newMessage.Timestamp,
-              lastMessageSenderId: newMessage.SenderID  // Update the sender ID
-            };
-          }
-          return chat;
-        });
+    setGroupChats(prevChats => {
+      return prevChats.map(chat => {
+        if (chat.groupId === newMessage.GroupID) {
+          return {
+            ...chat,
+            lastMessage: newMessage.Message,
+            lastMessageTime: newMessage.Timestamp,
+            lastMessageSenderId: newMessage.SenderID
+          };
+        }
+        return chat;
       });
-
-      setLatestMessage(newMessage);
-    }
+    });
+  
+    setLatestMessage(newMessage);
   };
 
   const handleSendMessage = async (e) => {
@@ -91,21 +89,12 @@ function ChatPage() {
           message: inputMessage.trim(),
           timestamp: new Date().toISOString()
         });
-
+  
         if (response.status === 201) {
           console.log('Message sent successfully');
           const { newMessage } = response.data;
           setLatestMessage(newMessage);
-          setGroupChats(prevChats => prevChats.map(chat =>
-            chat.groupId === newMessage.GroupID
-              ? { 
-                  ...chat, 
-                  lastMessage: newMessage.Message, 
-                  lastMessageTime: newMessage.Timestamp,
-                  lastMessageSenderId: newMessage.SenderID  // Update the sender ID
-                }
-              : chat
-          ));
+          handleNewMessage(newMessage); // Update group chats for the sender
           setInputMessage('');
         }
       } catch (error) {

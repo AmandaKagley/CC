@@ -60,6 +60,7 @@ app.listen(port, () => {
 });
 
 // Signup route
+// Signup route
 app.post('/signup', (req, res) => {
   const { username, email, password } = req.body;
 
@@ -94,7 +95,31 @@ app.post('/signup', (req, res) => {
         console.error('Signup error:', err);
         return res.status(500).json({ message: 'Signup Failed' });
       }
-      res.status(201).json({ message: 'Signup Successful', userId: this.lastID });
+
+      const userId = this.lastID;
+
+      // Read the default profile picture
+      const defaultProfilePicturePath = path.join(__dirname, 'assets', 'images', 'blank-profile-picture.png');
+      fs.readFile(defaultProfilePicturePath, (err, defaultProfilePicture) => {
+        if (err) {
+          console.error('Error reading default profile picture:', err);
+          return res.status(201).json({ message: 'Signup Successful, but failed to set default profile picture', userId });
+        }
+
+        // Call the profile picture upload endpoint
+        const formData = new FormData();
+        formData.append('userId', userId);
+        formData.append('profilePicture', defaultProfilePicture, 'default-profile-picture.png');
+
+        axios.post('http://localhost:3000/upload-profile-picture', formData, {
+          headers: formData.getHeaders()
+        }).then(() => {
+          res.status(201).json({ message: 'Signup Successful', userId });
+        }).catch((error) => {
+          console.error('Error uploading default profile picture:', error);
+          res.status(201).json({ message: 'Signup Successful, but failed to set default profile picture', userId });
+        });
+      });
     });
   });
 });
@@ -343,7 +368,7 @@ app.get('/user-group-chats/:userId', (req, res) => {
 // Fetch user profile
 app.get('/user/:userId', (req, res) => {
   const userId = req.params.userId;
-  const query = 'SELECT UserID, Username, Email, ProfilePicture FROM Users WHERE UserID = ?';
+  const query = 'SELECT UserID, Username, Email, ProfilePicture, Bio FROM Users WHERE UserID = ?';
 
   db.get(query, [userId], (err, row) => {
     if (err) {
@@ -360,7 +385,9 @@ app.get('/user/:userId', (req, res) => {
 // Endpoint to handle profile picture upload
 app.post('/upload-profile-picture', upload.single('profilePicture'), (req, res) => {
   const userId = req.body.userId;
-  const profilePicture = req.file.buffer; // Get the file buffer directly from multer
+  const profilePicture = req.file.buffer;
+
+  console.log("Uploading profile picture for userId:", userId);
 
   if (!userId || !profilePicture) {
     return res.status(400).json({ error: 'User ID and Profile Picture are required' });
@@ -369,8 +396,10 @@ app.post('/upload-profile-picture', upload.single('profilePicture'), (req, res) 
   const updateQuery = 'UPDATE Users SET ProfilePicture = ? WHERE UserID = ?';
   db.run(updateQuery, [profilePicture, userId], function (err) {
     if (err) {
+      console.error('Error updating profile picture:', err);
       return res.status(500).json({ error: 'Error updating profile picture' });
     }
+    console.log("Profile picture updated successfully for userId:", userId);
     res.json({ message: 'Profile picture updated successfully' });
   });
 });
@@ -391,5 +420,20 @@ app.get('/profile-picture/:userId', (req, res) => {
     // Set the appropriate content type (assuming JPEG for this example)
     res.setHeader('Content-Type', 'image/jpeg');
     res.send(row.ProfilePicture);
+  });
+});
+
+// Save User Bio
+app.put('/user/:userId/bio', (req, res) => {
+  const userId = req.params.userId;
+  const { bio } = req.body;
+
+  const query = 'UPDATE Users SET Bio = ? WHERE UserID = ?';
+  db.run(query, [bio, userId], function(err) {
+    if (err) {
+      console.error('Error updating bio:', err);
+      return res.status(500).json({ message: 'Failed to update bio' });
+    }
+    res.status(200).json({ message: 'Bio updated successfully' });
   });
 });

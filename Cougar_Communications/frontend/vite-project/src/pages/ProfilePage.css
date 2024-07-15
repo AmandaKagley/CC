@@ -59,27 +59,34 @@ body {
 .profile-picture-container {
   position: absolute;
   top: 80px; /* Space below the header */
-  left: 20px;
-  background-color: white; /* White background for the container */
-  padding: 20px;
-  border-radius: 10px;
+  left: 50%; /* Center horizontally */
+  transform: translateX(-50%); /* Adjust for exact centering */
+  background-color: white;
+  padding: 30px; /* Increased padding for more whitespace */
+  border-radius: 15px; /* Slightly increased border radius */
   text-align: center;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Optional shadow for better appearance */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  width: 240px; /* Increased width for the container */
 }
 
 .profile-picture {
-  width: 150px; /* Adjust size as needed */
-  height: 150px;
+  width: 180px; /* Slightly larger image */
+  height: 180px; /* Slightly larger image */
   border-radius: 50%;
-  object-fit: cover; /* Ensure image covers the area */
+  object-fit: cover;
+  display: block; /* Ensures the image is centered */
+  margin: 0 auto 20px; /* Centers the image horizontally and adds space below */
 }
 
-input[type="file"] {
-  margin-top: 10px;
+.profile-picture-upload {
+  position: relative;
+  margin-top: 20px; /* Increased top margin */
+  text-align: right; /* Aligns the button to the right */
 }
 
-/* Profile Container Styles */
+/* Adjust the profile container to account for the centered profile picture */
 .profile-container {
+  margin-top: 240px; /* Adjust this value as needed */
   background-color: grey; /* Grey background for the container */
   padding: 30px;
   border-radius: 40px;
