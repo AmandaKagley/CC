@@ -10,41 +10,34 @@ const WebSocket = require('ws');
 const db = new sqlite3.Database(path.join(__dirname, 'database', 'CC.db'));
 
 const app = express();
-const port = 3000; // Single port for the server
+const port = 3000; // Server will listen on this port
 
 // Middleware setup
-app.use(bodyParser.json());
-app.use(cors({
-  origin: 'http://localhost:5173', // or whatever port your React app is running on
-  credentials: true
-}));
-app.use(express.static(path.join(__dirname)));
+app.use(bodyParser.json()); // Parses JSON bodies in incoming requests
+app.use(cors()); // Enables Cross-Origin Resource Sharing
+app.use(express.static(path.join(__dirname))); // Serves static files from the root directory
 app.use(session({
-  secret: 'your_secret_key',
+  secret: 'your_secret_key', // Session secret key
   resave: false,
-  saveUninitialized: false,
-  cookie: { 
-    secure: process.env.NODE_ENV === "production", // false for development
-    httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
-  }
+  saveUninitialized: true
 }));
 
-const wss = new WebSocket.Server({ port: 8080 });
+// WebSocket server setup
+const wss = new WebSocket.Server({ port: 8080 }); // WebSocket server will listen on port 8080
 
-const clients = new Map();
-
-wss.on('connection', (ws, req) => {
-  const userId = new URL(req.url, 'http://localhost:8080').searchParams.get('userId');
-  clients.set(userId, ws);
-
-  console.log(`New WebSocket connection for user ${userId}`);
-
-  ws.on('close', () => {
-    clients.delete(userId);
+// WebSocket connection handling
+wss.on('connection', (ws) => {
+  ws.on('message', (message) => {
+    // Broadcast the received message to all connected clients except the sender
+    wss.clients.forEach(client => {
+      if (client !== ws && client.readyState === WebSocket.OPEN) {
+        client.send(message);
+      }
+    });
   });
 });
 
+// Start the Express server
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
@@ -52,66 +45,25 @@ app.listen(port, () => {
 // Signup route
 app.post('/signup', (req, res) => {
   const { username, email, password } = req.body;
-  
-  // Perform server-side validation
-  if (!username || !email || !password) {
-    return res.status(400).json({ message: 'All fields are required' });
-  }
-  
-  // Check if the email ends with @my.stchas.edu
-  if (!email.endsWith('@my.stchas.edu')) {
-    return res.status(400).json({ message: 'Invalid email domain', field: 'email' });
-  }
-
-  // Check if the user already exists
-  db.get('SELECT * FROM Users WHERE Email = ? OR Username = ?', [email, username], (err, row) => {
+  const query = 'INSERT INTO Users (Username, Email, Password) VALUES (?, ?, ?)';
+  db.run(query, [username, email, password], function (err) {
     if (err) {
-      return res.status(500).json({ message: 'Database error' });
+      return res.status(500).json({ message: 'Signup Failed' });
     }
-    if (row) {
-      if (row.Email === email) {
-        return res.status(409).json({ message: 'Email already in use', field: 'email' });
-      }
-      if (row.Username === username) {
-        return res.status(409).json({ message: 'Username already taken', field: 'username' });
-      }
-    }
-
-    // If user doesn't exist, insert the new user
-    const query = 'INSERT INTO Users (Username, Email, Password) VALUES (?, ?, ?)';
-    db.run(query, [username, email, password], function (err) {
-      if (err) {
-        console.error('Signup error:', err);
-        return res.status(500).json({ message: 'Signup Failed' });
-      }
-      res.status(201).json({ message: 'Signup Successful', userId: this.lastID });
-    });
+    res.status(201).json({ message: 'Signup Successful' });
   });
 });
-
 
 // Login route
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
   const query = 'SELECT * FROM Users WHERE Username = ? AND Password = ?';
   db.get(query, [username, password], (err, row) => {
-    if (err) {
-      console.error('Database error during login:', err);
-      return res.status(500).json({ message: 'Internal server error' });
+    if (err || !row) {
+      return res.status(401).json({ message: 'Login Failed' });
     }
-    if (!row) {
-      return res.status(401).json({ message: 'Invalid username or password' });
-    }
-    
-    // Log the user data for debugging
-    console.log('User found:', row);
-    
-    req.session.userId = row.UserID;
-    res.status(200).json({ 
-      message: 'Login Successful', 
-      userId: row.UserID,
-      username: row.Username
-    });
+    req.session.userId = row.UserID; // Store user ID in session
+    res.status(200).json({ message: 'Login Successful' });
   });
 });
 
@@ -144,81 +96,35 @@ app.get('/friends', (req, res) => {
   });
 });
 
-// Fetch chat messages
-app.get('/messages/:groupId', (req, res) => {
-  const groupId = req.params.groupId;
-  const query = `
-    SELECT 
-      m.MessageID,
-      m.GroupID,
-      m.SenderID,
-      u.Username as SenderUsername,
-      u.ProfilePicture as SenderProfilePicture,
-      m.Message,
-      m.Timestamp
-    FROM Messages m
-    JOIN Users u ON m.SenderID = u.UserID
-    WHERE m.GroupID = ?
-    ORDER BY m.Timestamp ASC
-  `;
-  db.all(query, [groupId], (err, rows) => {
+// Fetch chat messages for a specific chat
+app.get('/messages/:chatId', (req, res) => {
+  const chatId = req.params.chatId;
+  const query = 'SELECT * FROM Messages WHERE ChatID = ? ORDER BY CreatedAt ASC';
+  db.all(query, [chatId], (err, rows) => {
     if (err) {
-      console.error('Error fetching messages:', err);
-      return res.status(500).json({ message: 'Failed to fetch messages', error: err.message });
+      return res.status(500).json({ message: 'Failed to fetch messages' });
     }
     res.status(200).json(rows);
   });
 });
 
 // Send a new message
-
 app.post('/messages', (req, res) => {
-  const { groupId, senderId, message, timestamp } = req.body;
-  
-  const query = 'INSERT INTO Messages (GroupID, SenderID, Message, Timestamp) VALUES (?, ?, ?, ?)';
-  
-  db.run(query, [groupId, senderId, message, timestamp], function(err) {
+  const { chatId, senderId, text } = req.body;
+  const query = 'INSERT INTO Messages (ChatID, SenderID, Text, CreatedAt) VALUES (?, ?, ?, ?)';
+  db.run(query, [chatId, senderId, text, new Date().toISOString()], function (err) {
     if (err) {
-      console.error('Error inserting message:', err);
       return res.status(500).json({ message: 'Failed to send message' });
     }
-    
-    // Fetch the sender's information
-    db.get('SELECT Username, ProfilePicture FROM Users WHERE UserID = ?', [senderId], (err, user) => {
-      if (err) {
-        console.error('Error fetching user info:', err);
-        return res.status(500).json({ message: 'Failed to fetch user info' });
-      }
-
-      // Return the newly created message with sender info
-      const newMessage = {
-        MessageID: this.lastID,
-        GroupID: groupId,
-        SenderID: senderId,
-        SenderUsername: user.Username,
-        SenderProfilePicture: user.ProfilePicture,
-        Message: message,
-        Timestamp: timestamp
-      };
-    
-      // Broadcast the new message to all connected WebSocket clients
-      clients.forEach((clientWs, clientUserId) => {
-        if (clientUserId !== senderId.toString() && clientWs.readyState === WebSocket.OPEN) {
-          clientWs.send(JSON.stringify({
-            type: 'newMessage',
-            message: newMessage
-          }));
-        }
-      });
-    
-      res.status(201).json({ message: 'Message sent successfully', newMessage });
-    });
+    res.status(201).json({ message: 'Message sent' });
   });
 });
 
+// Serve the main HTML file
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
+
 // Search for friends endpoint
 app.get('/search', (req, res) => {
   const { query } = req.query;
@@ -238,40 +144,6 @@ app.get('/search', (req, res) => {
   db.all(sqlQuery, params, (err, rows) => {
     if (err) {
       return res.status(500).json({ message: 'Failed to search for friends' });
-    }
-    res.status(200).json(rows);
-  });
-});
-
-app.get('/user-group-chats/:userId', (req, res) => {
-  const userId = req.params.userId;
-  
-  const query = `
-    SELECT 
-      gc.GroupID as groupId, 
-      gc.GroupName as groupName, 
-      m.Message as lastMessage, 
-      m.Timestamp as lastMessageTime,
-      u.ProfilePicture as senderProfilePicture
-    FROM GroupChats gc
-    JOIN GroupMembers gm ON gc.GroupID = gm.GroupID
-    LEFT JOIN (
-      SELECT 
-        GroupID, 
-        Message, 
-        Timestamp, 
-        SenderID,
-        ROW_NUMBER() OVER (PARTITION BY GroupID ORDER BY Timestamp DESC) as rn
-      FROM Messages
-    ) m ON gc.GroupID = m.GroupID AND m.rn = 1
-    LEFT JOIN Users u ON m.SenderID = u.UserID
-    WHERE gm.UserID = ?
-    ORDER BY m.Timestamp DESC NULLS LAST
-  `;
-
-  db.all(query, [userId], (err, rows) => {
-    if (err) {
-      return res.status(500).json({ message: 'Failed to fetch group chats' });
     }
     res.status(200).json(rows);
   });
