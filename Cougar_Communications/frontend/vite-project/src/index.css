@@ -142,41 +142,42 @@ body {
     color: #fff; /* White text on hover */
 }
 
-.header {
-    overflow: hidden;
-    background-color: #0b1622;
-    padding: 10px 20px;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
+/* Header Styles */
+.headerlogin {
+  overflow: hidden;
+  background-color:#1a0a0a; /* Dark Maroon */
+  padding: 10px 20px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: min-content;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.header img {
-    width: 50px;
+.headerlogin img {
+  height: 100px; /* Adjust logo height */
 }
 
-.header a {
-    float: left;
-    color: rgb(255, 255, 255);
-    text-align: center;
-    padding: 12px;
-    text-decoration: none;
-    font-size: 18px;
-    line-height: 25px;
-    border-radius: 4px;
+.headerlogin .header-links {
+  display: flex;
+  gap: 20px;
 }
 
-.header a.logo {
-    font-size: 25px;
-    font-weight: bold;
-    padding: 0 !important;
+.headerlogin .header-links a {
+  color: white;
+  text-decoration: none;
+  font-size: 16px;
 }
 
-.header-right {
-    display: block;
-    align-items: center;
+.headerlogin .header-links a:hover {
+  text-decoration: underline;
 }
+
 
 @media screen and (max-width: 500px) {
     .header a {

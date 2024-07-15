@@ -46,7 +46,7 @@ const LoginPage = () => {
   return (
     <div className="wrapper">
       <title>Login To CC</title>
-      <header className="header">
+      <header className="headerlogin">
         <button className="logo-button" onClick={() => navigate('/')}>
           <img src={logo} alt="Logo" className="logo" />
         </button>

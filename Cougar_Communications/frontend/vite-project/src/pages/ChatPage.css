@@ -26,8 +26,12 @@ body {
 .main-content {
   display: static;
   display: flex;
-  height: calc(100vh - 60px); /* Adjust height to fit header */
+  height: calc(80vh - 60px); /* Adjust height to fit header */
   margin-top: 60px; /* Space for the header */
+}
+
+.logo img {
+  height: 100px; /* Adjust logo height */
 }
 
 .profile-button, .logout-button {

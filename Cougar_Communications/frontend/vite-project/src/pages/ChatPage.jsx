@@ -75,7 +75,7 @@ function ChatPage() {
         return chat;
       });
     });
-  
+
     setLatestMessage(newMessage);
   };
 
@@ -89,7 +89,7 @@ function ChatPage() {
           message: inputMessage.trim(),
           timestamp: new Date().toISOString()
         });
-  
+
         if (response.status === 201) {
           console.log('Message sent successfully');
           const { newMessage } = response.data;

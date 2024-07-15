@@ -19,29 +19,29 @@ const SignupPage = () => {
   const handleSignup = async (e) => {
     e.preventDefault();
     setLoading(true);
-  
+
     // Collect all errors
-    let allErrors = {...validateSignup(username, email, password, confirmPassword)};
-  
+    let allErrors = { ...validateSignup(username, email, password, confirmPassword) };
+
     try {
       const signupResponse = await axios.post('http://localhost:3000/signup', {
         username,
         email,
         password
       });
-  
+
       if (signupResponse.status === 201) {
         const userId = signupResponse.data.userId;
-  
+
         // Now upload the default profile picture
         const formData = new FormData();
         formData.append('userId', userId);
-  
+
         // Convert the default profile picture to a Blob
         const response = await fetch(defaultProfilePicture);
         const blob = await response.blob();
         formData.append('profilePicture', blob, 'default-profile-picture.png');
-  
+
         try {
           await axios.post('http://localhost:3000/upload-profile-picture', formData, {
             headers: {
@@ -52,7 +52,7 @@ const SignupPage = () => {
         } catch (uploadError) {
           console.error('Error uploading default profile picture:', uploadError);
         }
-  
+
         alert('Signup Successful! You can now login.');
         navigate('/login');
       }
@@ -68,7 +68,7 @@ const SignupPage = () => {
       setLoading(false);
       setErrors(allErrors);
     }
-  
+
     // If there are any errors, don't proceed
     if (Object.keys(allErrors).length > 0) {
       return;
@@ -77,7 +77,7 @@ const SignupPage = () => {
   const handleChange = (setter, field) => (e) => {
     setter(e.target.value);
     setErrors((prevErrors) => {
-      const newErrors = {...prevErrors};
+      const newErrors = { ...prevErrors };
       delete newErrors[field];
       return newErrors;
     });
@@ -89,7 +89,7 @@ const SignupPage = () => {
       <button className="logo-button" onClick={() => navigate('/')}>
         <img src={logo} alt="Logo" className="logo" />
       </button>
-      <h1 className="header">Create Your Account</h1>
+      <h1 className=".headerlogin">Create Your Account</h1>
       <div className="signup-container">
         <form onSubmit={handleSignup}>
           <div className="input-box">
