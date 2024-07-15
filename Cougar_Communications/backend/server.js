@@ -276,3 +276,19 @@ app.get('/user-group-chats/:userId', (req, res) => {
     res.status(200).json(rows);
   });
 });
+
+app.get('/user/:userId', (req, res) => {
+  const userId = req.params.userId;
+  const query = 'SELECT UserID, Username, Email, ProfilePicture FROM Users WHERE UserID = ?';
+  
+  db.get(query, [userId], (err, row) => {
+    if (err) {
+      console.error('Error fetching user profile:', err);
+      return res.status(500).json({ message: 'Failed to fetch user profile' });
+    }
+    if (!row) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.status(200).json(row);
+  });
+});
