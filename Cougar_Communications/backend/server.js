@@ -5,6 +5,8 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const session = require('express-session');
 const WebSocket = require('ws');
+const multer = require('multer');
+const fs = require('fs');
 
 // SQLite database setup
 const db = new sqlite3.Database(path.join(__dirname, 'database', 'CC.db'));
@@ -29,6 +31,10 @@ app.use(session({
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
 }));
+
+// Multer setup for handling file uploads
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
 // Setup WebSocket server on port 8080
 const wss = new WebSocket.Server({ port: 8080 });
@@ -347,5 +353,42 @@ app.get('/user/:userId', (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
     res.status(200).json(row);
+  });
+});
+
+// Endpoint to handle profile picture upload
+app.post('/upload-profile-picture', upload.single('profilePicture'), (req, res) => {
+  const userId = req.body.userId;
+  const profilePicture = req.file.buffer; // Get the file buffer directly from multer
+
+  if (!userId || !profilePicture) {
+    return res.status(400).json({ error: 'User ID and Profile Picture are required' });
+  }
+
+  const updateQuery = 'UPDATE Users SET ProfilePicture = ? WHERE UserID = ?';
+  db.run(updateQuery, [profilePicture, userId], function (err) {
+    if (err) {
+      return res.status(500).json({ error: 'Error updating profile picture' });
+    }
+    res.json({ message: 'Profile picture updated successfully' });
+  });
+});
+
+// Endpoint to serve profile pictures
+app.get('/profile-picture/:userId', (req, res) => {
+  const userId = req.params.userId;
+
+  const query = 'SELECT ProfilePicture FROM Users WHERE UserID = ?';
+  db.get(query, [userId], (err, row) => {
+    if (err) {
+      return res.status(500).send('Error retrieving profile picture');
+    }
+    if (!row || !row.ProfilePicture) {
+      return res.status(404).send('Profile picture not found');
+    }
+
+    // Set the appropriate content type (assuming JPEG for this example)
+    res.setHeader('Content-Type', 'image/jpeg');
+    res.send(row.ProfilePicture);
   });
 });
