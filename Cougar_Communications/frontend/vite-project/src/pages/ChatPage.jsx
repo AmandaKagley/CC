@@ -146,7 +146,10 @@ function ChatPage() {
           </Link>
           <h1>Cougar Communications</h1>
         </div>
+        <div className="header-right">
+        <button className="profile-button" onClick={() => navigate('/profile')}>Profile</button>
         <button className="logout-button" onClick={() => navigate('/login')}>Logout</button>
+        </div>
       </header>
 
       <div className="main-content">

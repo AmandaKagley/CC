@@ -23,28 +23,32 @@ app.use(session({
   secret: 'your_secret_key',
   resave: false,
   saveUninitialized: false,
-  cookie: { 
+  cookie: {
     secure: process.env.NODE_ENV === "production", // false for development
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
 }));
 
+// Setup WebSocket server on port 8080
 const wss = new WebSocket.Server({ port: 8080 });
 
 const clients = new Map();
 
+// Handle WebSocket connections
 wss.on('connection', (ws, req) => {
   const userId = new URL(req.url, 'http://localhost:8080').searchParams.get('userId');
   clients.set(userId, ws);
 
   console.log(`New WebSocket connection for user ${userId}`);
 
+  // Handle WebSocket disconnections
   ws.on('close', () => {
     clients.delete(userId);
   });
 });
 
+// Start the server
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
@@ -52,12 +56,12 @@ app.listen(port, () => {
 // Signup route
 app.post('/signup', (req, res) => {
   const { username, email, password } = req.body;
-  
+
   // Perform server-side validation
   if (!username || !email || !password) {
     return res.status(400).json({ message: 'All fields are required' });
   }
-  
+
   // Check if the email ends with @my.stchas.edu
   if (!email.endsWith('@my.stchas.edu')) {
     return res.status(400).json({ message: 'Invalid email domain', field: 'email' });
@@ -89,7 +93,6 @@ app.post('/signup', (req, res) => {
   });
 });
 
-
 // Login route
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
@@ -102,13 +105,13 @@ app.post('/login', (req, res) => {
     if (!row) {
       return res.status(401).json({ message: 'Invalid username or password' });
     }
-    
+
     // Log the user data for debugging
     console.log('User found:', row);
-    
+
     req.session.userId = row.UserID;
-    res.status(200).json({ 
-      message: 'Login Successful', 
+    res.status(200).json({
+      message: 'Login Successful',
       userId: row.UserID,
       username: row.Username
     });
@@ -171,18 +174,17 @@ app.get('/messages/:groupId', (req, res) => {
 });
 
 // Send a new message
-
 app.post('/messages', (req, res) => {
   const { groupId, senderId, message, timestamp } = req.body;
-  
+
   const query = 'INSERT INTO Messages (GroupID, SenderID, Message, Timestamp) VALUES (?, ?, ?, ?)';
-  
-  db.run(query, [groupId, senderId, message, timestamp], function(err) {
+
+  db.run(query, [groupId, senderId, message, timestamp], function (err) {
     if (err) {
       console.error('Error inserting message:', err);
       return res.status(500).json({ message: 'Failed to send message' });
     }
-    
+
     // Fetch the sender's information
     db.get('SELECT Username, ProfilePicture FROM Users WHERE UserID = ?', [senderId], (err, user) => {
       if (err) {
@@ -200,7 +202,7 @@ app.post('/messages', (req, res) => {
         Message: message,
         Timestamp: timestamp
       };
-    
+
       // Broadcast the new message to all connected WebSocket clients
       clients.forEach((clientWs, clientUserId) => {
         if (clientUserId !== senderId.toString() && clientWs.readyState === WebSocket.OPEN) {
@@ -210,15 +212,17 @@ app.post('/messages', (req, res) => {
           }));
         }
       });
-    
+
       res.status(201).json({ message: 'Message sent successfully', newMessage });
     });
   });
 });
 
+// Serve the main HTML file
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
+
 // Search for friends endpoint
 app.get('/search', (req, res) => {
   const { query } = req.query;
@@ -243,9 +247,10 @@ app.get('/search', (req, res) => {
   });
 });
 
+// Fetch user group chats
 app.get('/user-group-chats/:userId', (req, res) => {
   const userId = req.params.userId;
-  
+
   const query = `
     SELECT 
       gc.GroupID as groupId, 
@@ -274,5 +279,22 @@ app.get('/user-group-chats/:userId', (req, res) => {
       return res.status(500).json({ message: 'Failed to fetch group chats' });
     }
     res.status(200).json(rows);
+  });
+});
+
+// Fetch user profile
+app.get('/user/:userId', (req, res) => {
+  const userId = req.params.userId;
+  const query = 'SELECT UserID, Username, Email, ProfilePicture FROM Users WHERE UserID = ?';
+
+  db.get(query, [userId], (err, row) => {
+    if (err) {
+      console.error('Error fetching user profile:', err);
+      return res.status(500).json({ message: 'Failed to fetch user profile' });
+    }
+    if (!row) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.status(200).json(row);
   });
 });

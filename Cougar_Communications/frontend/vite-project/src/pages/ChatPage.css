@@ -45,6 +45,16 @@ body {
   border-radius: 5px;
 }
 
+.profile-button {
+  background-color: #b33a3a; /* Profile button color */
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  cursor: pointer;
+  border-radius: 5px;
+  margin-right: 10px; /* Space between buttons */  
+}
+
 /* Main Content Styles */
 .main-content {
   display: flex;
