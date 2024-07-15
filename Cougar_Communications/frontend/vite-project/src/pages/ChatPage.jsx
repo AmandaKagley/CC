@@ -139,6 +139,7 @@ function ChatPage() {
 
   return (
     <div className="chat-page">
+      <title>Chat</title>
       <header className="header">
         <div className="header-left">
           <Link to="/" className="logo">

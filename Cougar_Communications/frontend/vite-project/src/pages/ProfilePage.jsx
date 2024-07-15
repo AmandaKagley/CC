@@ -40,6 +40,7 @@ const ProfilePage = () => {
 
   return (
     <div className="profile-page">
+      <title>Edit Your Profile</title>
       <header className="header">
         <h1>User Profile</h1>
         <div className="header-right">
