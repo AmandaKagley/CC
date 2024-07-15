@@ -40,6 +40,7 @@ const ProfilePage = () => {
 
   return (
     <div className="profile-page">
+      <title>Edit Your Profile!</title>
       <header className="header">
         <h1>User Profile</h1>
         <button className="logout-button" onClick={() => navigate('/login')}>Logout</button>
