@@ -62,7 +62,6 @@ const SignupPage = () => {
 
   return (
     <div className="wrapper">
-      <title>Signup Here!</title>
       <button className="logo-button" onClick={() => navigate('/')}>
         <img src={logo} alt="Logo" className="logo" />
       </button>
