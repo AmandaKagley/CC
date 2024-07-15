@@ -4,11 +4,12 @@ body {
   font-family: Arial, sans-serif;
   background-color: #2e1a1a; /* Dark maroon background */
   color: white;
+  overflow: hidden; /* Prevent scrolling on body */
 }
 
 /* Header Styles */
 .header {
-  display: flex;
+  display: static;
   justify-content: space-between;
   align-items: center;
   padding: 10px 20px;
@@ -21,45 +22,22 @@ body {
   z-index: 1000; /* Ensure header stays on top */
 }
 
-.header-left {
-  display: flex;
-  align-items: center;
-}
-
-.logo img {
-  height: 40px;
-}
-
-.header h1 {
-  margin: 0;
-  font-size: 24px;
-  margin-left: 10px;
-}
-
-.logout-button {
-  background-color: #b33a3a; /* Logout button color */
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  cursor: pointer;
-  border-radius: 5px;
-}
-
 /* Main Content Styles */
 .main-content {
-  display: flex;
-  height: calc(100vh - 60px); /* Adjust height to fit header */
+  display: static;
+  height: calc(100vh - 60px);/* Adjust height to fit header */
+  width: 100%;
   margin-top: 60px; /* Space for the header */
 }
 
 /* Friends Bar Styles */
 .friends-bar {
-  width: 250px;
   background-color: #1a0a0a;
   overflow-y: auto;
   border-right: 1px solid #3b1c1c;
   padding: 10px;
-  height: 100%; /* Fill remaining height */
+  width: 20%; /* Friends bar takes up 20% of the width */
+  box-sizing: border-box; /* Include padding and border in width */
 }
 
 /* Adjusted Friends Item Styles */
@@ -108,25 +86,11 @@ body {
 
 /* Chat Area Styles */
 .chat-area {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
   background-color: #2e1a1a;
   padding: 10px;
-  height: 100%;
   border: 1px solid #000; /* Black border */
   overflow: hidden; /* Prevent content from overflowing */
-}
-
-/* Minimize Chat Button Styles */
-.minimize-chat-button {
-  background-color: #3b1c1c;
-  color: white;
-  border: none;
-  padding: 8px;
-  cursor: pointer;
-  border-radius: 5px;
-  margin-bottom: 10px;
+  width: 100%;
 }
 
 /* Chat Header Styles */
@@ -136,6 +100,7 @@ body {
   margin-bottom: 10px;
   display: flex;
   align-items: center;
+  overflow-wrap: break-word; /* Ensure text wraps properly */
 }
 
 .chat-header img {
@@ -158,7 +123,8 @@ body {
   max-width: 70%;
   word-wrap: break-word;
   color: white;
-  display: flex;
+  display: static;
+  max-width: max-content;
   align-items: center;
 }
 
@@ -183,14 +149,28 @@ body {
   border-radius: 5px;
   background-color: #2e1a1a;
   color: white;
+  overflow-wrap: break-word; /* Ensure text wraps properly */
 }
 
 .send-button {
   background-color: #b33a3a; /* Send button color */
-  color: white;
+  color: rgb(80, 15, 15);
   border: none;
   padding: 8px 16px;
   cursor: pointer;
   border-radius: 5px;
   margin-left: 10px;
+}
+
+.start-chat-button {
+  padding: 0.5rem;
+  background-color: #4b0000; /* Deep Maroon color */
+  color: white;
+  border: none;
+  cursor: pointer;
+  margin-left: 0.5rem;
+}
+
+.start-chat-button:hover {
+  background-color: #6c0000; /* Slightly lighter maroon on hover */
 }

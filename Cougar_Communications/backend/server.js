@@ -172,6 +172,57 @@ app.get('/messages/:groupId', (req, res) => {
     res.status(200).json(rows);
   });
 });
+// Create a new chat between two users
+app.post('/start-chat', (req, res) => {
+  const { userId, friendId } = req.body;
+
+  if (!userId || !friendId) {
+    return res.status(400).json({ message: 'User ID and Friend ID are required' });
+  }
+
+  // Create a new group chat
+  const query = `
+    INSERT INTO GroupChats (GroupName)
+    VALUES ('Chat between ${userId} and ${friendId}')
+  `;
+  db.run(query, function (err) {
+    if (err) {
+      console.error('Error creating chat:', err);
+      return res.status(500).json({ message: 'Failed to create chat' });
+    }
+
+    const groupId = this.lastID;
+
+    // Add users to the new group chat
+    const addUsersQuery = `
+      INSERT INTO GroupMembers (GroupID, UserID)
+      VALUES (?, ?), (?, ?)
+    `;
+    db.run(addUsersQuery, [groupId, userId, groupId, friendId], function (err) {
+      if (err) {
+        console.error('Error adding users to chat:', err);
+        return res.status(500).json({ message: 'Failed to add users to chat' });
+      }
+
+      // Fetch the new chat data
+      const fetchChatQuery = `
+        SELECT 
+          gc.GroupID as groupId, 
+          gc.GroupName as groupName
+        FROM GroupChats gc
+        WHERE gc.GroupID = ?
+      `;
+      db.get(fetchChatQuery, [groupId], (err, chat) => {
+        if (err) {
+          console.error('Error fetching new chat:', err);
+          return res.status(500).json({ message: 'Failed to fetch new chat' });
+        }
+
+        res.status(201).json(chat);
+      });
+    });
+  });
+});
 
 // Send a new message
 app.post('/messages', (req, res) => {
