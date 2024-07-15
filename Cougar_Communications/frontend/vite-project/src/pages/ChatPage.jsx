@@ -16,7 +16,6 @@ function ChatPage() {
   const [currentUserId, setCurrentUserId] = useState(null);
   const [latestMessage, setLatestMessage] = useState(null);
   const [socket, setSocket] = useState(null);
-  const [selectedFriend, setSelectedFriend] = useState(null);
   const socketRef = useRef(null);
   const navigate = useNavigate();
 
@@ -70,7 +69,8 @@ function ChatPage() {
             return {
               ...chat,
               lastMessage: newMessage.Message,
-              lastMessageTime: newMessage.Timestamp
+              lastMessageTime: newMessage.Timestamp,
+              lastMessageSenderId: newMessage.SenderID  // Update the sender ID
             };
           }
           return chat;
@@ -78,10 +78,6 @@ function ChatPage() {
       });
 
       setLatestMessage(newMessage);
-
-      if (selectedChat && selectedChat.groupId === newMessage.GroupID) {
-        setLatestMessage(newMessage);
-      }
     }
   };
 
@@ -102,7 +98,12 @@ function ChatPage() {
           setLatestMessage(newMessage);
           setGroupChats(prevChats => prevChats.map(chat =>
             chat.groupId === newMessage.GroupID
-              ? { ...chat, lastMessage: newMessage.Message, lastMessageTime: newMessage.Timestamp }
+              ? { 
+                  ...chat, 
+                  lastMessage: newMessage.Message, 
+                  lastMessageTime: newMessage.Timestamp,
+                  lastMessageSenderId: newMessage.SenderID  // Update the sender ID
+                }
               : chat
           ));
           setInputMessage('');
@@ -156,24 +157,26 @@ function ChatPage() {
           </Link>
           <h1>Cougar Communications</h1>
         </div>
-        <button className="logout-button" onClick={() => navigate('/login')}>Logout</button>
+        <div className="header-right">
+          <button className="profile-button" onClick={() => navigate('/profile')}>Profile</button>
+          <button className="logout-button" onClick={() => navigate('/login')}>Logout</button>
+        </div>
       </header>
 
       <div className="main-content">
         <div className="friends-bar">
-          <button className="start-chat-button" onClick={startChatWithFriend}>Start Chat</button>
           <div className="friends-list">
-            {groupChats.map((chat) => (
-              <GroupChatItem
-                key={chat.groupId}
-                groupName={chat.groupName}
-                lastMessage={chat.lastMessage}
-                lastMessageTime={formatTimestamp(chat.lastMessageTime)}
-                senderProfilePicture={chat.senderProfilePicture}
-                isSelected={selectedChat && selectedChat.groupId === chat.groupId}
-                onClick={() => handleChatSelect(chat)}
-              />
-            ))}
+          {groupChats.map((chat) => (
+            <GroupChatItem
+              key={chat.groupId}
+              groupName={chat.groupName}
+              lastMessage={chat.lastMessage}
+              lastMessageTime={formatTimestamp(chat.lastMessageTime)}
+              lastMessageSenderId={chat.lastMessageSenderId}
+              isSelected={selectedChat && selectedChat.groupId === chat.groupId}
+              onClick={() => handleChatSelect(chat)}
+            />
+          ))}
           </div>
         </div>
 
@@ -181,15 +184,13 @@ function ChatPage() {
           {selectedChat && (
             <>
               <div className="chat-header">
-                <img className="profile-image" src={selectedChat.senderProfilePicture || selectedChat.img} alt="" />
-                <h4>{selectedChat.groupName || selectedChat.name}</h4>
+                <h4>{selectedChat.groupName}</h4>
               </div>
               <GroupChatMessage
                 groupId={selectedChat.groupId}
                 currentUserId={currentUserId}
                 fetchMessages={true}
                 latestMessage={latestMessage}
-                formatTimestamp={formatTimestamp} // Pass the format function
               />
               <form onSubmit={handleSendMessage} className="message-input">
                 <input

@@ -30,6 +30,16 @@ body {
   margin-top: 60px; /* Space for the header */
 }
 
+.profile-button {
+  background-color: #b33a3a; /* Profile button color */
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  cursor: pointer;
+  border-radius: 5px;
+  margin-right: 10px; /* Space between buttons */  
+}
+
 /* Friends Bar Styles */
 .friends-bar {
   background-color: #1a0a0a;

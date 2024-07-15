@@ -39,9 +39,10 @@ const GroupChatMessage = ({ groupId, currentUserId, fetchMessages, latestMessage
                         className={`chat-message ${isCurrentUser ? 'right' : 'left'}`}
                     >
                         <img 
-                            className="profile-image" 
-                            src={message.SenderProfilePicture || 'path/to/default-avatar.png'} 
-                            alt=""
+                        className="profile-image" 
+                        src={`http://localhost:3000/profile-picture/${message.SenderID}`} 
+                        alt="Profile"
+                        onError={(e) => { e.target.src = 'path/to/default-avatar.png' }}
                         />
                         <div className="message-content">
                             <div className="message-sender">{message.SenderUsername}</div>

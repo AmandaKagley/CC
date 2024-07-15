@@ -42,9 +42,12 @@ const ProfilePage = () => {
     <div className="profile-page">
       <header className="header">
         <h1>User Profile</h1>
+        <div className="header-right">
+        <button className="chat-button" onClick={() => navigate('/chat')}>Chat</button>
         <button className="logout-button" onClick={() => navigate('/login')}>Logout</button>
+        </div>
       </header>
-      <div className="profile-content">
+    <div className="profile-content">
         <img src={user.ProfilePicture || 'default-profile-pic.png'} alt="Profile" className="profile-picture" />
         <h2>{user.Username}</h2>
         <p>Email: {user.Email}</p>
