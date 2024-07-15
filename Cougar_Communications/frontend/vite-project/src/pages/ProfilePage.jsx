@@ -42,6 +42,7 @@ const ProfilePage = () => {
     <div className="profile-page">
       <header className="header">
         <h1>User Profile</h1>
+        <button className="chat-button" onClick={() => navigate('/chat')}>Chat</button>
         <button className="logout-button" onClick={() => navigate('/login')}>Logout</button>
       </header>
       <div className="profile-content">
