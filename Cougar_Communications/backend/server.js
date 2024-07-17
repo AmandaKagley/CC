@@ -59,7 +59,42 @@ app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
 
-// Signup route
+// Function to create AI chat for a user
+function createAIChatForUser(userId, username) {
+  return new Promise((resolve, reject) => {
+    const query = `
+      INSERT INTO GroupChats (GroupName) VALUES (?)
+    `;
+    db.run(query, [`AI Assistant Chat for ${username}`], function(err) {
+      if (err) {
+        reject(err);
+        return;
+      }
+      const groupId = this.lastID;
+      const addUserQuery = `
+        INSERT INTO GroupMembers (GroupID, UserID) VALUES (?, ?)
+      `;
+      db.run(addUserQuery, [groupId, userId], (err) => {
+        if (err) {
+          reject(err);
+        } else {
+          const initialMessageQuery = `
+            INSERT INTO Messages (GroupID, SenderID, Message, Timestamp)
+            VALUES (?, ?, ?, ?)
+          `;
+          db.run(initialMessageQuery, [groupId, 0, 'Hello! How can I assist you today?', new Date().toISOString()], (err) => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve();
+            }
+          });
+        }
+      });
+    });
+  });
+}
+
 // Signup route
 app.post('/signup', (req, res) => {
   const { username, email, password } = req.body;
@@ -98,28 +133,32 @@ app.post('/signup', (req, res) => {
 
       const userId = this.lastID;
 
-      // Read the default profile picture
-      const defaultProfilePicturePath = path.join(__dirname, 'assets', 'images', 'blank-profile-picture.png');
-      fs.readFile(defaultProfilePicturePath, (err, defaultProfilePicture) => {
-        if (err) {
-          console.error('Error reading default profile picture:', err);
-          return res.status(201).json({ message: 'Signup Successful, but failed to set default profile picture', userId });
-        }
+      // Create AI chat for the new user
+      createAIChatForUser(userId, username)
+        .then(() => {
+          // Read the default profile picture
+          const defaultProfilePicturePath = path.join(__dirname, 'assets', 'images', 'blank-profile-picture.png');
+          fs.readFile(defaultProfilePicturePath, (err, defaultProfilePicture) => {
+            if (err) {
+              console.error('Error reading default profile picture:', err);
+              return res.status(201).json({ message: 'Signup Successful, but failed to set default profile picture', userId });
+            }
 
-        // Call the profile picture upload endpoint
-        const formData = new FormData();
-        formData.append('userId', userId);
-        formData.append('profilePicture', defaultProfilePicture, 'default-profile-picture.png');
-
-        axios.post('http://localhost:3000/upload-profile-picture', formData, {
-          headers: formData.getHeaders()
-        }).then(() => {
-          res.status(201).json({ message: 'Signup Successful', userId });
-        }).catch((error) => {
-          console.error('Error uploading default profile picture:', error);
-          res.status(201).json({ message: 'Signup Successful, but failed to set default profile picture', userId });
+            // Update the user's profile picture
+            const updateQuery = 'UPDATE Users SET ProfilePicture = ? WHERE UserID = ?';
+            db.run(updateQuery, [defaultProfilePicture, userId], function (err) {
+              if (err) {
+                console.error('Error updating profile picture:', err);
+                return res.status(201).json({ message: 'Signup Successful, but failed to set default profile picture', userId });
+              }
+              res.status(201).json({ message: 'Signup Successful', userId });
+            });
+          });
+        })
+        .catch((error) => {
+          console.error('Error creating AI chat:', error);
+          res.status(201).json({ message: 'Signup Successful, but failed to create AI chat', userId });
         });
-      });
     });
   });
 });
@@ -186,12 +225,12 @@ app.get('/messages/:groupId', (req, res) => {
       m.MessageID,
       m.GroupID,
       m.SenderID,
-      u.Username as SenderUsername,
-      u.ProfilePicture as SenderProfilePicture,
+      CASE WHEN m.SenderID = 0 THEN 'AI Assistant' ELSE u.Username END as SenderUsername,
+      CASE WHEN m.SenderID = 0 THEN NULL ELSE u.ProfilePicture END as SenderProfilePicture,
       m.Message,
       m.Timestamp
     FROM Messages m
-    JOIN Users u ON m.SenderID = u.UserID
+    LEFT JOIN Users u ON m.SenderID = u.UserID
     WHERE m.GroupID = ?
     ORDER BY m.Timestamp ASC
   `;
@@ -203,6 +242,7 @@ app.get('/messages/:groupId', (req, res) => {
     res.status(200).json(rows);
   });
 });
+
 // Create a new chat between two users
 app.post('/start-chat', (req, res) => {
   const { userId, friendId } = req.body;
@@ -267,38 +307,57 @@ app.post('/messages', (req, res) => {
       return res.status(500).json({ message: 'Failed to send message' });
     }
 
-    // Fetch the sender's information
-    db.get('SELECT Username, ProfilePicture FROM Users WHERE UserID = ?', [senderId], (err, user) => {
+    const newMessage = {
+      MessageID: this.lastID,
+      GroupID: groupId,
+      SenderID: senderId,
+      Message: message,
+      Timestamp: timestamp
+    };
+
+    // Check if this is an AI chat and generate a response
+    db.get('SELECT GroupName FROM GroupChats WHERE GroupID = ?', [groupId], (err, chat) => {
       if (err) {
-        console.error('Error fetching user info:', err);
-        return res.status(500).json({ message: 'Failed to fetch user info' });
+        console.error('Error checking chat type:', err);
+      } else if (chat && chat.GroupName.startsWith('AI Assistant Chat for ')) {
+        // Generate AI response
+        const aiResponse = "Hello! How can I assist you today?";
+        db.run(query, [groupId, 0, aiResponse, new Date().toISOString()], function (err) {
+          if (err) {
+            console.error('Error inserting AI response:', err);
+          } else {
+            const aiMessage = {
+              MessageID: this.lastID,
+              GroupID: groupId,
+              SenderID: 0,
+              SenderUsername: 'AI Assistant',
+              Message: aiResponse,
+              Timestamp: new Date().toISOString()
+            };
+            // Broadcast AI message
+            broadcastMessage(aiMessage);
+          }
+        });
       }
-
-      // Return the newly created message with sender info
-      const newMessage = {
-        MessageID: this.lastID,
-        GroupID: groupId,
-        SenderID: senderId,
-        SenderUsername: user.Username,
-        SenderProfilePicture: user.ProfilePicture,
-        Message: message,
-        Timestamp: timestamp
-      };
-
-      // Broadcast the new message to all connected WebSocket clients
-      clients.forEach((clientWs, clientUserId) => {
-        if (clientUserId !== senderId.toString() && clientWs.readyState === WebSocket.OPEN) {
-          clientWs.send(JSON.stringify({
-            type: 'newMessage',
-            message: newMessage
-          }));
-        }
-      });
-
-      res.status(201).json({ message: 'Message sent successfully', newMessage });
     });
+
+    // Broadcast the new message to all connected WebSocket clients
+    broadcastMessage(newMessage);
+
+    res.status(201).json({ message: 'Message sent successfully', newMessage });
   });
 });
+
+function broadcastMessage(message) {
+  clients.forEach((clientWs, clientUserId) => {
+    if (clientWs.readyState === WebSocket.OPEN) {
+      clientWs.send(JSON.stringify({
+        type: 'newMessage',
+        message: message
+      }));
+    }
+  });
+}
 
 // Serve the main HTML file
 app.get('/', (req, res) => {
@@ -339,8 +398,8 @@ app.get('/user-group-chats/:userId', (req, res) => {
       gc.GroupName as groupName, 
       m.Message as lastMessage, 
       m.Timestamp as lastMessageTime,
-      u.UserID as lastMessageSenderId,
-      u.ProfilePicture as lastMessageSenderProfilePicture
+      CASE WHEN m.SenderID = 0 THEN 0 ELSE u.UserID END as lastMessageSenderId,
+      CASE WHEN m.SenderID = 0 THEN NULL ELSE u.ProfilePicture END as lastMessageSenderProfilePicture
     FROM GroupChats gc
     JOIN GroupMembers gm ON gc.GroupID = gm.GroupID
     LEFT JOIN (
@@ -364,7 +423,6 @@ app.get('/user-group-chats/:userId', (req, res) => {
     res.status(200).json(rows);
   });
 });
-
 // Fetch user profile
 app.get('/user/:userId', (req, res) => {
   const userId = req.params.userId;

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from 'axios';
 import './GroupChatMessage.css';
+import logo from '../assets/images/logo.png';
 
 const GroupChatMessage = ({ groupId, currentUserId, fetchMessages, latestMessage }) => {
     const [messages, setMessages] = useState([]);
@@ -33,19 +34,20 @@ const GroupChatMessage = ({ groupId, currentUserId, fetchMessages, latestMessage
         <div className="chat-messages">
             {messages.map((message, index) => {
                 const isCurrentUser = String(message.SenderID) === String(currentUserId);
+                const isAI = message.SenderID === 0;
                 return (
                     <div 
                         key={message.MessageID || index} 
-                        className={`chat-message ${isCurrentUser ? 'right' : 'left'}`}
+                        className={`chat-message ${isCurrentUser ? 'right' : 'left'} ${isAI ? 'ai-message' : ''}`}
                     >
                         <img 
                         className="profile-image" 
-                        src={`http://localhost:3000/profile-picture/${message.SenderID}`} 
+                        src={isAI ? logo : `http://localhost:3000/profile-picture/${message.SenderID}`}
                         alt="Profile"
-                        onError={(e) => { e.target.src = 'path/to/default-avatar.png' }}
+                        onError={(e) => { e.target.src = '../assets/images/blank-profile-picture.png' }}
                         />
                         <div className="message-content">
-                            <div className="message-sender">{message.SenderUsername}</div>
+                            <div className="message-sender">{isAI ? 'AI Assistant' : message.SenderUsername}</div>
                             <div className="message-text">{message.Message}</div>
                             <div className="time">{new Date(message.Timestamp).toLocaleTimeString()}</div>
                         </div>
