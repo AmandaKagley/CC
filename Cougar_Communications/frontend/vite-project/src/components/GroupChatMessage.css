@@ -53,3 +53,12 @@
     font-size: 0.8em;
     color: #ccc;
 }
+
+.friend-item.ai-chat {
+    background-color: #f0f8ff; /* Light blue background */
+    border-left: 3px solid #4169e1; /* Royal blue border */
+  }
+  
+  .chat-message.ai-message {
+    background-color: #f0f8ff; /* Light blue background */
+  }

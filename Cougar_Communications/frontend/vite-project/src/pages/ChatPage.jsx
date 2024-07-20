@@ -1,4 +1,4 @@
-// ChatPage.js
+// ChatPage.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -94,7 +94,7 @@ function ChatPage() {
           console.log('Message sent successfully');
           const { newMessage } = response.data;
           setLatestMessage(newMessage);
-          handleNewMessage(newMessage); // Update group chats for the sender
+          handleNewMessage(newMessage);
           setInputMessage('');
         }
       } catch (error) {
@@ -107,7 +107,19 @@ function ChatPage() {
     try {
       const userId = getUserAuth();
       const response = await axios.get(`http://localhost:3000/user-group-chats/${userId}`);
-      setGroupChats(response.data);
+      const chats = response.data;
+      
+      // Find the AI chat
+      const aiChatIndex = chats.findIndex(chat => chat.groupName.startsWith('AI Assistant Chat for '));
+      
+      if (aiChatIndex !== -1) {
+        // Remove the AI chat from its current position
+        const aiChat = chats.splice(aiChatIndex, 1)[0];
+        // Add it to the beginning of the array
+        chats.unshift(aiChat);
+      }
+      
+      setGroupChats(chats);
     } catch (error) {
       console.error('Error fetching group chats:', error);
     }
@@ -115,26 +127,6 @@ function ChatPage() {
 
   const handleChatSelect = (chat) => {
     setSelectedChat(chat);
-  };
-
-  const startChatWithFriend = async () => {
-    if (selectedFriend && currentUserId) {
-      try {
-        // Create a new chat with the selected friend
-        const response = await axios.post('http://localhost:3000/start-chat', {
-          userId: currentUserId,
-          friendId: selectedFriend.id
-        });
-
-        if (response.status === 201) {
-          const newChat = response.data;
-          setGroupChats(prevChats => [...prevChats, newChat]);
-          setSelectedChat(newChat);
-        }
-      } catch (error) {
-        console.error('Error starting chat:', error);
-      }
-    }
   };
 
   return (
