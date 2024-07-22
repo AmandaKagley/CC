@@ -57,6 +57,19 @@ function ChatPage() {
     }
   }, [navigate]);
 
+  async function generateBotAnswer(prompt) {
+    try {
+      const model = genAI.getGenerativeModel({ model: "gemini-1.0-pro" });
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      console.log(response.text());
+      return response.text();
+    } catch (error) {
+      console.error('Error generating bot answer:', error);
+      return 'Sorry, I encountered an error while processing your request.';
+    }
+  }
+
   const fetchFriendRequests = async () => {
     try {
       const response = await axios.get('http://localhost:3000/friend-requests', { withCredentials: true });

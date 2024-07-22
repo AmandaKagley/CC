@@ -101,6 +101,25 @@ function createAIChatForUser(userId, username) {
   });
 }
 
+/* Google AI */
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+
+const API_KEY = 'AIzaSyDWj-xDyshF4zSUadL_0hpCk07Fl6YaI9U';
+const genAI = new GoogleGenerativeAI(API_KEY);
+
+async function generateBotAnswer(prompt) {
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-1.0-pro" });
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    console.log(response.text());
+    return response.text();
+  } catch (error) {
+    console.error('Error generating bot answer:', error);
+    return 'Sorry, I encountered an error while processing your request.';
+  }
+}
+
 // Signup route
 app.post('/signup', (req, res) => {
   const { username, email, password } = req.body;
@@ -303,12 +322,12 @@ app.post('/start-chat', (req, res) => {
 });
 
 // Send a new message
-app.post('/messages', (req, res) => {
+app.post('/messages', async (req, res) => {
   const { groupId, senderId, message, timestamp } = req.body;
 
   const query = 'INSERT INTO Messages (GroupID, SenderID, Message, Timestamp) VALUES (?, ?, ?, ?)';
 
-  db.run(query, [groupId, senderId, message, timestamp], function (err) {
+  db.run(query, [groupId, senderId, message, timestamp], async function (err) {
     if (err) {
       console.error('Error inserting message:', err);
       return res.status(500).json({ message: 'Failed to send message' });
@@ -323,12 +342,13 @@ app.post('/messages', (req, res) => {
     };
 
     // Check if this is an AI chat and generate a response
-    db.get('SELECT GroupName FROM GroupChats WHERE GroupID = ?', [groupId], (err, chat) => {
+    db.get('SELECT GroupName FROM GroupChats WHERE GroupID = ?', [groupId], async (err, chat) => {
       if (err) {
         console.error('Error checking chat type:', err);
       } else if (chat && chat.GroupName.startsWith('AI Assistant Chat for ')) {
-        // Generate AI response
-        const aiResponse = "Hello! How can I assist you today?";
+        // Generate AI response using the user's message
+        const aiResponse = await generateBotAnswer(message);
+
         db.run(query, [groupId, 0, aiResponse, new Date().toISOString()], function (err) {
           if (err) {
             console.error('Error inserting AI response:', err);
@@ -354,7 +374,6 @@ app.post('/messages', (req, res) => {
     res.status(201).json({ message: 'Message sent successfully', newMessage });
   });
 });
-
 function broadcastMessage(message) {
   clients.forEach((clientWs, clientUserId) => {
     if (clientWs.readyState === WebSocket.OPEN) {
