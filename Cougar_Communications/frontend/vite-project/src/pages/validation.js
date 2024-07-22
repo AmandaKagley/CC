@@ -31,14 +31,17 @@ export const getUserAuth = () => {
   return sessionStorage.getItem('userId');
 };
 
+// Sets the current userID
 export const setUserAuth = (userId) => {
   sessionStorage.setItem('userId', userId);
 };
 
+// Logs user out
 export const removeUserAuth = () => {
-  localStorage.removeItem('userId');
+  sessionStorage.removeItem('userId');
 };
 
+// Checks if user is authenticated
 export const isAuthenticated = () => {
   return !!getUserAuth();
 };

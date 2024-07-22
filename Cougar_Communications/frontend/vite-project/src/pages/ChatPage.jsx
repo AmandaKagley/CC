@@ -125,6 +125,17 @@ function ChatPage() {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await axios.post('http://localhost:3000/logout', {}, { withCredentials: true });
+      removeUserAuth();
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      alert('Logout failed. Please try again.');
+    }
+  };
+
   const handleChatSelect = (chat) => {
     setSelectedChat(chat);
   };
@@ -141,7 +152,7 @@ function ChatPage() {
         </div>
         <div className="header-right">
           <button className="logout-button" onClick={() => navigate('/profile')}>Profile</button>
-          <button className="logout-button" onClick={() => navigate('/login')}>Logout</button>
+          <button className="logout-button" onClick={handleLogout}>Logout</button>
         </div>
       </header>
 
