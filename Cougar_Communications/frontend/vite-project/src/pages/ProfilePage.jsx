@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import './ProfilePage.css';
 import { getUserAuth } from './validation';
-import defaultProfilePicture from '../assets/images/blank-profile-picture.png'; // Import the default image
+import defaultProfilePicture from '../assets/images/blank-profile-picture.png';
 
 const ProfilePage = () => {
   const [user, setUser] = useState(null);
@@ -13,22 +13,22 @@ const ProfilePage = () => {
   const [bio, setBio] = useState('');
   const [profilePicture, setProfilePicture] = useState(defaultProfilePicture);
   const navigate = useNavigate();
+  const { userId: viewedUserId } = useParams(); // Get the userId from URL params
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      const userId = getUserAuth();
-      setCurrentUserId(userId);
-      if (!userId) {
+      const loggedInUserId = getUserAuth();
+      setCurrentUserId(loggedInUserId);
+      if (!loggedInUserId) {
         navigate('/login');
         return;
       }
 
       try {
-        const response = await axios.get(`http://localhost:3000/user/${userId}`);
+        const response = await axios.get(`http://localhost:3000/user/${viewedUserId || loggedInUserId}`);
         setUser(response.data);
-        // Set the bio from the user data, or an empty string if it's null
         setBio(response.data.Bio || '');
-        loadProfilePicture(userId);
+        loadProfilePicture(viewedUserId || loggedInUserId);
       } catch (err) {
         console.error('Error fetching user profile:', err);
         setError('Failed to load user profile');
@@ -38,7 +38,7 @@ const ProfilePage = () => {
     };
 
     fetchUserProfile();
-  }, [navigate]);
+  }, [navigate, viewedUserId]);
 
   const loadProfilePicture = async (userId) => {
     try {
@@ -91,18 +91,20 @@ const ProfilePage = () => {
     }
   };
 
+  const isOwnProfile = !viewedUserId || viewedUserId === currentUserId;
+
   if (loading) return <div>Loading...</div>;
   if (error) return <div>{error}</div>;
   if (!user) return <div>User not found</div>;
 
   return (
     <div className="profile-page">
-      <title>Edit Your Profile!</title>
+      <title>{isOwnProfile ? 'Edit Your Profile!' : `${user.Username}'s Profile`}</title>
       <header className="header">
-        <h1>User Profile</h1>
+        <h1>{isOwnProfile ? 'Your Profile' : `${user.Username}'s Profile`}</h1>
         <div>
           <button className="chat-page-button" onClick={() => navigate('/chat')}>Chat Page</button>
-          <button className="logout-button" onClick={() => navigate('/login')}>Logout</button>          
+          {isOwnProfile && <button className="logout-button" onClick={() => navigate('/login')}>Logout</button>}
         </div>
       </header>
       <div className="profile-content">
@@ -112,20 +114,26 @@ const ProfilePage = () => {
             alt="Profile" 
             className="profile-picture"
           />
-          <input type="file" onChange={handleProfilePictureUpload} accept="image/*" />
+          {isOwnProfile && <input type="file" onChange={handleProfilePictureUpload} accept="image/*" />}
         </div>
         <div className="profile-container">
           <h2>{user.Username}</h2>
           <p>Email: {user.Email}</p>
-          <textarea
-            value={bio}
-            onChange={handleBioChange}
-            placeholder="Write your bio here..."
-            rows="4"
-            cols="50"
-            className="bio-textarea"
-          ></textarea>
-          <button onClick={handleBioSave} className="save-bio-button">Save Bio</button>
+          {isOwnProfile ? (
+            <>
+              <textarea
+                value={bio}
+                onChange={handleBioChange}
+                placeholder="Write your bio here..."
+                rows="4"
+                cols="50"
+                className="bio-textarea"
+              ></textarea>
+              <button onClick={handleBioSave} className="save-bio-button">Save Bio</button>
+            </>
+          ) : (
+            <p>{bio || 'No bio available.'}</p>
+          )}
         </div>
       </div>
     </div>

@@ -13,6 +13,7 @@ export default function App() {
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/profile" element={<ProfilePage />} /> {/* Add route for ProfilePage */}
+        <Route path="/profile/:userId?" element={<ProfilePage />} />
       </Routes>
     </BrowserRouter>
   );

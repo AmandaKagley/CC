@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './GroupChatMessage.css';
 import logo from '../assets/images/logo.png';
 
 const GroupChatMessage = ({ groupId, currentUserId, fetchMessages, latestMessage }) => {
     const [messages, setMessages] = useState([]);
-
+    const navigate = useNavigate();
+    
     useEffect(() => {
         if (groupId) {
             fetchMessagesFromServer();
@@ -30,6 +32,12 @@ const GroupChatMessage = ({ groupId, currentUserId, fetchMessages, latestMessage
         }
     };
 
+    const handleMessageClick = (senderId) => {
+        if (senderId !== 0) { // Don't navigate for AI messages
+            navigate(`/profile/${senderId}`);
+        }
+    };
+
     return (
         <div className="chat-messages">
             {messages.map((message, index) => {
@@ -39,6 +47,8 @@ const GroupChatMessage = ({ groupId, currentUserId, fetchMessages, latestMessage
                     <div 
                         key={message.MessageID || index} 
                         className={`chat-message ${isCurrentUser ? 'right' : 'left'} ${isAI ? 'ai-message' : ''}`}
+                        onClick={() => handleMessageClick(message.SenderID)} 
+                        style={{ cursor: isAI ? 'default' : 'pointer' }} 
                     >
                         <img 
                         className="profile-image" 
