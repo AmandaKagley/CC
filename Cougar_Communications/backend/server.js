@@ -14,6 +14,12 @@ const db = new sqlite3.Database(path.join(__dirname, 'database', 'CC.db'));
 const app = express();
 const port = 3000; // Single port for the server
 
+// Constants for friendship status
+const FRIENDSHIP_STATUS = {
+  PENDING: 'PENDING',
+  ACCEPTED: 'ACCEPTED'
+};
+
 // Middleware setup
 app.use(bodyParser.json());
 app.use(cors({
@@ -494,5 +500,154 @@ app.put('/user/:userId/bio', (req, res) => {
       return res.status(500).json({ message: 'Failed to update bio' });
     }
     res.status(200).json({ message: 'Bio updated successfully' });
+  });
+});
+
+// Send a friend request
+app.post('/send-friend-request', (req, res) => {
+  const { senderId, recipientEmail } = req.body;
+
+  const getRecipientQuery = 'SELECT UserID FROM Users WHERE Email = ?';
+  db.get(getRecipientQuery, [recipientEmail], (err, recipient) => {
+    if (err) {
+      return res.status(500).json({ message: 'Database error' });
+    }
+    if (!recipient) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const recipientId = recipient.UserID;
+    const checkQuery = 'SELECT * FROM Friends WHERE UserID = ? AND FriendID = ?';
+    db.get(checkQuery, [senderId, recipientId], (err, row) => {
+      if (err) {
+        return res.status(500).json({ message: 'Database error' });
+      }
+      if (row) {
+        return res.status(400).json({ message: 'Friend request already sent or already friends' });
+      }
+
+      const query = 'INSERT INTO Friends (UserID, FriendID, FriendshipStatus) VALUES (?, ?, ?)';
+  db.run(query, [senderId, recipientId, FRIENDSHIP_STATUS.PENDING], function (err) {
+        if (err) {
+          return res.status(500).json({ message: 'Failed to send friend request' });
+        }
+        res.status(200).json({ message: 'Friend request sent successfully' });
+      });
+    });
+  });
+});
+
+// Accept a friend request
+app.post('/accept-friend-request', (req, res) => {
+  const { senderId } = req.body;
+  const userId = req.session.userId;
+
+  if (!senderId || !userId) {
+    return res.status(400).json({ message: 'Missing sender ID or user ID' });
+  }
+
+  console.log(`Accepting friend request from ${senderId} to ${userId}`);
+
+  // Start a transaction to ensure both updates happen or neither does
+  db.serialize(() => {
+    db.run('BEGIN TRANSACTION');
+
+    const updateQuery = `
+    UPDATE Friends 
+    SET FriendshipStatus = ? 
+    WHERE (UserID = ? AND FriendID = ? AND FriendshipStatus = ?)
+    OR (UserID = ? AND FriendID = ? AND FriendshipStatus = ?)
+  `;
+  db.run(updateQuery, [
+    FRIENDSHIP_STATUS.ACCEPTED, 
+    senderId, userId, FRIENDSHIP_STATUS.PENDING,
+    userId, senderId, FRIENDSHIP_STATUS.PENDING
+  ], function (err) {
+      if (err) {
+        console.error('Error accepting friend request:', err);
+        db.run('ROLLBACK');
+        return res.status(500).json({ message: 'Failed to accept friend request' });
+      }
+
+      if (this.changes === 0) {
+        db.run('ROLLBACK');
+        return res.status(404).json({ message: 'Friend request not found or already accepted' });
+      }
+
+      // If the friend record doesn't exist in both directions, create it
+      const insertQuery = `
+        INSERT OR IGNORE INTO Friends (UserID, FriendID, FriendshipStatus)
+        VALUES (?, ?, 'accepted')
+      `;
+
+      db.run(insertQuery, [userId, senderId], (err) => {
+        if (err) {
+          console.error('Error creating reverse friendship:', err);
+          db.run('ROLLBACK');
+          return res.status(500).json({ message: 'Failed to create reverse friendship' });
+        }
+
+        db.run('COMMIT', (err) => {
+          if (err) {
+            console.error('Error committing transaction:', err);
+            return res.status(500).json({ message: 'Failed to commit friendship changes' });
+          }
+          res.status(200).json({ message: 'Friend request accepted successfully' });
+        });
+      });
+    });
+  });
+});
+
+// Decline a friend request
+app.post('/decline-friend-request', (req, res) => {
+  const { requestId } = req.body;
+
+  const deleteQuery = 'DELETE FROM Friends WHERE ROWID = ? AND FriendshipStatus = "pending"';
+  db.run(deleteQuery, [requestId], function (err) {
+    if (err) {
+      return res.status(500).json({ message: 'Failed to decline friend request' });
+    }
+    res.status(200).json({ message: 'Friend request declined' });
+  });
+});
+
+// Fetch friend requests
+app.get('/friend-requests', (req, res) => {
+  const userId = req.session.userId;
+  const query = `
+    SELECT f.UserID AS SenderID, u.Username AS SenderUsername
+    FROM Friends f
+    JOIN Users u ON f.UserID = u.UserID
+    WHERE f.FriendID = ? AND f.FriendshipStatus = ?
+  `;
+  db.all(query, [userId, FRIENDSHIP_STATUS.PENDING], (err, rows) => {
+    if (err) {
+      console.error('Error fetching friend requests:', err);
+      return res.status(500).json({ message: 'Failed to fetch friend requests' });
+    }
+    res.status(200).json(rows);
+  });
+});
+
+// Fetch friends list
+app.get('/friends-list', (req, res) => {
+  const userId = req.session.userId;
+  
+  if (!userId) {
+    return res.status(401).json({ message: 'User not logged in' });
+  }
+
+  const query = `
+    SELECT u.UserID, u.Username, u.Email
+    FROM Friends f
+    JOIN Users u ON (f.UserID = u.UserID OR f.FriendID = u.UserID)
+    WHERE (f.UserID = ? OR f.FriendID = ?) AND f.FriendshipStatus = ? AND u.UserID != ?
+  `;
+  db.all(query, [userId, userId, FRIENDSHIP_STATUS.ACCEPTED, userId], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ message: 'Failed to fetch friends list' });
+    }
+    res.status(200).json(rows);
   });
 });

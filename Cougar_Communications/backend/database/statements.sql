@@ -16,10 +16,10 @@ CREATE TABLE Users (
 );
 
 -- Stores friendship and requests 
-CREATE TABLE Friends (
+CREATE TABLE IF NOT EXISTS Friends (
     UserID INTEGER NOT NULL,
     FriendID INTEGER NOT NULL,
-    FriendshipStatus VARCHAR NOT NULL,
+    FriendshipStatus TEXT CHECK(FriendshipStatus IN ('PENDING', 'ACCEPTED')),
     DateAdded DATETIME DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (UserID, FriendID),
     FOREIGN KEY (UserID) REFERENCES Users(UserID),
@@ -65,9 +65,9 @@ INSERT INTO Users (Email, Username, Password, ProfilePicture) VALUES ('carol@exa
 -- Insert friendships
 INSERT INTO Friends (UserID, FriendID, FriendshipStatus) 
 VALUES 
-    ((SELECT UserID FROM Users WHERE Username = 'Alice'), (SELECT UserID FROM Users WHERE Username = 'Bob'), 'Accepted'),
-    ((SELECT UserID FROM Users WHERE Username = 'Alice'), (SELECT UserID FROM Users WHERE Username = 'Carol'), 'Accepted'),
-    ((SELECT UserID FROM Users WHERE Username = 'Bob'), (SELECT UserID FROM Users WHERE Username = 'Carol'), 'Accepted');
+    ((SELECT UserID FROM Users WHERE Username = 'Alice'), (SELECT UserID FROM Users WHERE Username = 'Bob'), 'ACCEPTED'),
+    ((SELECT UserID FROM Users WHERE Username = 'Alice'), (SELECT UserID FROM Users WHERE Username = 'Carol'), 'ACCEPTED'),
+    ((SELECT UserID FROM Users WHERE Username = 'Bob'), (SELECT UserID FROM Users WHERE Username = 'Carol'), 'ACCEPTED');
 
 -- Create group chats (including one-on-one chats)
 INSERT INTO GroupChats (GroupName) VALUES ('Alice-Bob Chat');
@@ -119,7 +119,4 @@ ORDER BY
     gc.GroupID, m.Timestamp;
 
 
-SELECT * FROM Users;
-
-
-
+SELECT * FROM Friends;

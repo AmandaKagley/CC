@@ -6,6 +6,7 @@ import logo from '../assets/images/logo.png';
 import GroupChatItem from '../components/GroupChatItem';
 import GroupChatMessage from '../components/GroupChatMessage';
 import { getUserAuth, removeUserAuth } from './validation';
+import FriendItem from '../components/FriendItem';
 
 import './ChatPage.css';
 
@@ -16,6 +17,9 @@ function ChatPage() {
   const [currentUserId, setCurrentUserId] = useState(null);
   const [latestMessage, setLatestMessage] = useState(null);
   const [socket, setSocket] = useState(null);
+  const [email, setEmail] = useState('');
+  const [friendRequests, setFriendRequests] = useState([]);
+  const [friendsList, setFriendsList] = useState([]);
   const socketRef = useRef(null);
   const navigate = useNavigate();
 
@@ -26,6 +30,8 @@ function ChatPage() {
       navigate('/login');
     } else {
       fetchGroupChats();
+      fetchFriendRequests();
+      fetchFriendsList();
 
       // Establish WebSocket connection with user ID
       const ws = new WebSocket(`ws://localhost:8080?userId=${userId}`);
@@ -50,6 +56,64 @@ function ChatPage() {
       };
     }
   }, [navigate]);
+
+  const fetchFriendRequests = async () => {
+    try {
+      const response = await axios.get('http://localhost:3000/friend-requests', { withCredentials: true });
+      setFriendRequests(response.data);
+    } catch (error) {
+      console.error('Error fetching friend requests:', error);
+    }
+  };
+
+  const fetchFriendsList = async () => {
+    try {
+      const response = await axios.get('http://localhost:3000/friends-list', { withCredentials: true });
+      setFriendsList(response.data);
+    } catch (error) {
+      console.error('Error fetching friends list:', error);
+    }
+  };
+
+  const sendFriendRequest = async () => {
+    try {
+      const senderId = getUserAuth();
+      const response = await axios.post('http://localhost:3000/send-friend-request', {
+        senderId,
+        recipientEmail: email
+      }, { withCredentials: true });
+      console.log('Send friend request response:', response.data);
+      fetchFriendRequests();
+      setEmail('');
+    } catch (error) {
+      console.error('Error sending friend request:', error);
+      if (error.response) {
+        console.error('Server responded with:', error.response.data);
+      }
+    }
+  };
+
+  const acceptFriendRequest = async (senderId) => {
+    try {
+      const response = await axios.post('http://localhost:3000/accept-friend-request', { senderId }, { withCredentials: true });
+      console.log('Accept friend request response:', response.data);
+      fetchFriendRequests();
+      fetchGroupChats();
+      fetchFriendsList();
+    } catch (error) {
+      console.error('Error accepting friend request:', error);
+    }
+  };
+
+  const declineFriendRequest = async (requestId) => {
+    try {
+      const response = await axios.post('http://localhost:3000/decline-friend-request', { requestId }, { withCredentials: true });
+      console.log('Decline friend request response:', response.data);
+      fetchFriendRequests();
+    } catch (error) {
+      console.error('Error declining friend request:', error);
+    }
+  };
 
   const formatTimestamp = (timestamp) => {
     const date = new Date(timestamp);
@@ -125,17 +189,6 @@ function ChatPage() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await axios.post('http://localhost:3000/logout', {}, { withCredentials: true });
-      removeUserAuth();
-      navigate('/login');
-    } catch (error) {
-      console.error('Logout error:', error);
-      alert('Logout failed. Please try again.');
-    }
-  };
-
   const handleChatSelect = (chat) => {
     setSelectedChat(chat);
   };
@@ -152,7 +205,7 @@ function ChatPage() {
         </div>
         <div className="header-right">
           <button className="logout-button" onClick={() => navigate('/profile')}>Profile</button>
-          <button className="logout-button" onClick={handleLogout}>Logout</button>
+          <button className="logout-button" onClick={() => navigate('/login')}>Logout</button>
         </div>
       </header>
 
@@ -200,6 +253,36 @@ function ChatPage() {
               <p>Select a chat to start messaging</p>
             </div>
           )}
+        </div>
+
+        <div className="friends-right-bar">
+          <h2>Add New Friend</h2>
+          <input
+            type="email"
+            placeholder="Enter email to add friend"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <button onClick={sendFriendRequest}>Send Friend Request</button>
+          <h2>Friend Requests</h2>
+          {friendRequests.map((request) => (
+            <div key={request.SenderID} className="friend-item">
+              <div className="friend-info">
+                <h6>{request.SenderUsername}</h6>
+                <button onClick={() => acceptFriendRequest(request.SenderID)}>Accept</button>
+                <button onClick={() => declineFriendRequest(request.SenderID)}>Decline</button>
+              </div>
+            </div>
+          ))}
+          <h2>Friends List</h2>
+        {friendsList.map((friend) => (
+          <FriendItem
+            key={friend.UserID}
+            userId={friend.UserID}
+            username={friend.Username}
+            email={friend.Email}
+          />
+        ))}
         </div>
       </div>
     </div>
