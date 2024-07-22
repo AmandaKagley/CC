@@ -7,6 +7,7 @@ const session = require('express-session');
 const WebSocket = require('ws');
 const multer = require('multer');
 const fs = require('fs');
+const axios = require('axios');
 
 // SQLite database setup
 const db = new sqlite3.Database(path.join(__dirname, 'database', 'CC.db'));
@@ -65,7 +66,7 @@ function createAIChatForUser(userId, username) {
     const query = `
       INSERT INTO GroupChats (GroupName) VALUES (?)
     `;
-    db.run(query, [`AI Assistant Chat for ${username}`], function(err) {
+    db.run(query, [`AI Assistant Chat for ${username}`], function (err) {
       if (err) {
         reject(err);
         return;
@@ -297,12 +298,12 @@ app.post('/start-chat', (req, res) => {
 });
 
 // Send a new message
-app.post('/messages', (req, res) => {
+app.post('/messages', async (req, res) => {
   const { groupId, senderId, message, timestamp } = req.body;
 
   const query = 'INSERT INTO Messages (GroupID, SenderID, Message, Timestamp) VALUES (?, ?, ?, ?)';
 
-  db.run(query, [groupId, senderId, message, timestamp], function (err) {
+  db.run(query, [groupId, senderId, message, timestamp], async function (err) {
     if (err) {
       console.error('Error inserting message:', err);
       return res.status(500).json({ message: 'Failed to send message' });
@@ -316,17 +317,76 @@ app.post('/messages', (req, res) => {
       Timestamp: timestamp
     };
 
+    // Function to generate AI response
+    async function generateAIResponse(message) {
+      try {
+
+        const userMessage = `${message}`;
+
+// Define the prompt
+const prompt = `You are an assistant that provides concise and relevant answers. Respond to the following question in one sentence or less:
+
+Question: ${userMessage}`;
+
+// Send the request
+const response = await axios.post(
+  'https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.1',
+  {
+    inputs: prompt,
+    parameters: {
+      temperature: 0.7,
+      max_length: 50,
+      top_p: 0.9,
+      top_k: 50,
+    }
+  },
+  {
+    headers: {
+      Authorization: `Bearer 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`,
+      'Content-Type': 'application/json'
+    }
+  }
+);
+
+// Postprocess the response
+let outputText = response.data;
+
+if (typeof outputText !== 'string') {
+    outputText = JSON.stringify(outputText); // Convert to string if it's an object
+}
+
+outputText = outputText.replace("Instruction: Provide a brief and relevant answer.", "").trim();
+
+console.log(outputText);
+
+        // Log the complete response to debug
+        console.log('API Response:', response.data);
+
+        const aiResponse = response.data[0]?.generated_text || 'I’m not sure how to respond to that.';
+        return aiResponse;
+      } catch (error) {
+        console.error('Error generating AI response:', error);
+        return 'I’m having trouble generating a response.';
+      }
+    }
+
     // Check if this is an AI chat and generate a response
-    db.get('SELECT GroupName FROM GroupChats WHERE GroupID = ?', [groupId], (err, chat) => {
+    db.get('SELECT GroupName FROM GroupChats WHERE GroupID = ?', [groupId], async (err, chat) => {
       if (err) {
         console.error('Error checking chat type:', err);
-      } else if (chat && chat.GroupName.startsWith('AI Assistant Chat for ')) {
-        // Generate AI response
-        const aiResponse = "Hello! How can I assist you today?";
-        db.run(query, [groupId, 0, aiResponse, new Date().toISOString()], function (err) {
-          if (err) {
-            console.error('Error inserting AI response:', err);
-          } else {
+        return;
+      }
+
+      if (chat && chat.GroupName.startsWith('AI Assistant Chat for ')) {
+        try {
+          const aiResponse = await generateAIResponse(message);
+
+          db.run(query, [groupId, 0, aiResponse, new Date().toISOString()], function (err) {
+            if (err) {
+              console.error('Error inserting AI response:', err);
+              return;
+            }
+
             const aiMessage = {
               MessageID: this.lastID,
               GroupID: groupId,
@@ -337,8 +397,11 @@ app.post('/messages', (req, res) => {
             };
             // Broadcast AI message
             broadcastMessage(aiMessage);
-          }
-        });
+          });
+        } catch (error) {
+          console.error('Error generating AI response:', error);
+          // Optionally send an error message back to the client
+        }
       }
     });
 
@@ -488,7 +551,7 @@ app.put('/user/:userId/bio', (req, res) => {
   const { bio } = req.body;
 
   const query = 'UPDATE Users SET Bio = ? WHERE UserID = ?';
-  db.run(query, [bio, userId], function(err) {
+  db.run(query, [bio, userId], function (err) {
     if (err) {
       console.error('Error updating bio:', err);
       return res.status(500).json({ message: 'Failed to update bio' });

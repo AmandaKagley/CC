@@ -1,4 +1,3 @@
-// ChatPage.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -50,6 +49,12 @@ function ChatPage() {
       };
     }
   }, [navigate]);
+
+  useEffect(() => {
+    if (selectedChat) {
+      fetchMessages();
+    }
+  }, [selectedChat]);
 
   const formatTimestamp = (timestamp) => {
     const date = new Date(timestamp);
@@ -125,6 +130,18 @@ function ChatPage() {
     }
   };
 
+  const fetchMessages = async () => {
+    if (selectedChat) {
+      try {
+        const response = await axios.get(`http://localhost:3000/messages/${selectedChat.groupId}`);
+        // Assuming response.data contains an array of messages
+        setLatestMessage(response.data[response.data.length - 1]);
+      } catch (error) {
+        console.error('Error fetching messages:', error);
+      }
+    }
+  };
+
   const handleLogout = async () => {
     try {
       await axios.post('http://localhost:3000/logout', {}, { withCredentials: true });
@@ -138,6 +155,7 @@ function ChatPage() {
 
   const handleChatSelect = (chat) => {
     setSelectedChat(chat);
+    fetchMessages();  // Fetch messages when a chat is selected
   };
 
   return (
