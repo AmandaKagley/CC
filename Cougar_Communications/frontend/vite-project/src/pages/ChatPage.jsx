@@ -118,11 +118,11 @@ function ChatPage() {
     }
   };
 
-  const declineFriendRequest = async (requestId) => {
+  const declineFriendRequest = async (senderId) => {
     try {
-      const response = await axios.post('http://localhost:3000/decline-friend-request', { requestId }, { withCredentials: true });
+      const response = await axios.post('http://localhost:3000/decline-friend-request', { senderId }, { withCredentials: true });
       console.log('Decline friend request response:', response.data);
-      fetchFriendRequests();
+      setFriendRequests(prevRequests => prevRequests.filter(request => request.SenderID !== senderId));
     } catch (error) {
       console.error('Error declining friend request:', error);
     }

@@ -620,14 +620,23 @@ app.post('/accept-friend-request', (req, res) => {
 
 // Decline a friend request
 app.post('/decline-friend-request', (req, res) => {
-  const { requestId } = req.body;
+  const { senderId } = req.body;
+  const userId = req.session.userId;
 
-  const deleteQuery = 'DELETE FROM Friends WHERE ROWID = ? AND FriendshipStatus = "pending"';
-  db.run(deleteQuery, [requestId], function (err) {
+  if (!senderId || !userId) {
+    return res.status(400).json({ message: 'Missing sender ID or user ID' });
+  }
+
+  const deleteQuery = 'DELETE FROM Friends WHERE UserID = ? AND FriendID = ? AND FriendshipStatus = ?';
+  db.run(deleteQuery, [senderId, userId, FRIENDSHIP_STATUS.PENDING], function (err) {
     if (err) {
+      console.error('Error declining friend request:', err);
       return res.status(500).json({ message: 'Failed to decline friend request' });
     }
-    res.status(200).json({ message: 'Friend request declined' });
+    if (this.changes === 0) {
+      return res.status(404).json({ message: 'Friend request not found' });
+    }
+    res.status(200).json({ message: 'Friend request declined successfully' });
   });
 });
 
