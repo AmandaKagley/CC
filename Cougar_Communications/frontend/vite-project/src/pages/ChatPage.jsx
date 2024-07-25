@@ -1,4 +1,3 @@
-// ChatPage.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -7,6 +6,7 @@ import GroupChatItem from '../components/GroupChatItem';
 import GroupChatMessage from '../components/GroupChatMessage';
 import { getUserAuth, removeUserAuth } from './validation';
 import FriendItem from '../components/FriendItem';
+import NewChatModal from "../components/NewChatModal";
 
 import './ChatPage.css';
 
@@ -20,6 +20,7 @@ function ChatPage() {
   const [email, setEmail] = useState('');
   const [friendRequests, setFriendRequests] = useState([]);
   const [friendsList, setFriendsList] = useState([]);
+  const [showNewChatModal, setShowNewChatModal] = useState(false);
   const socketRef = useRef(null);
   const navigate = useNavigate();
 
@@ -33,7 +34,6 @@ function ChatPage() {
       fetchFriendRequests();
       fetchFriendsList();
 
-      // Establish WebSocket connection with user ID
       const ws = new WebSocket(`ws://localhost:8080?userId=${userId}`);
       setSocket(ws);
       socketRef.current = ws;
@@ -56,19 +56,6 @@ function ChatPage() {
       };
     }
   }, [navigate]);
-
-  async function generateBotAnswer(prompt) {
-    try {
-      const model = genAI.getGenerativeModel({ model: "gemini-1.0-pro" });
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      console.log(response.text());
-      return response.text();
-    } catch (error) {
-      console.error('Error generating bot answer:', error);
-      return 'Sorry, I encountered an error while processing your request.';
-    }
-  }
 
   const fetchFriendRequests = async () => {
     try {
@@ -185,17 +172,14 @@ function ChatPage() {
       const userId = getUserAuth();
       const response = await axios.get(`http://localhost:3000/user-group-chats/${userId}`);
       const chats = response.data;
-      
-      // Find the AI chat
+
       const aiChatIndex = chats.findIndex(chat => chat.groupName.startsWith('AI Assistant Chat for '));
-      
+
       if (aiChatIndex !== -1) {
-        // Remove the AI chat from its current position
         const aiChat = chats.splice(aiChatIndex, 1)[0];
-        // Add it to the beginning of the array
         chats.unshift(aiChat);
       }
-      
+
       setGroupChats(chats);
     } catch (error) {
       console.error('Error fetching group chats:', error);
@@ -206,9 +190,18 @@ function ChatPage() {
     setSelectedChat(chat);
   };
 
+  const handleNewChatCreated = (newChat) => {
+    setGroupChats([newChat, ...groupChats]);
+    setSelectedChat(newChat);
+  };
+
+  const handleStartChat = () => {
+    console.log('Start Chat button clicked');
+    setShowNewChatModal(true);
+  };
+
   return (
     <div className="chat-page">
-      <title>Chat</title>
       <header className="header">
         <div className="header-left">
           <Link to="/" className="logo">
@@ -218,25 +211,27 @@ function ChatPage() {
         </div>
         <div className="header-right">
           <button className="logout-button" onClick={() => navigate('/profile')}>Profile</button>
-          <button className="logout-button" onClick={() => navigate('/login')}>Logout</button>
+          <button className="logout-button" onClick={() => {
+            removeUserAuth();
+            navigate('/login');
+          }}>Logout</button>
         </div>
       </header>
 
       <div className="main-content">
         <div className="friends-bar">
-          <div className="friends-list">
-            {groupChats.map((chat) => (
-              <GroupChatItem
-                key={chat.groupId}
-                groupName={chat.groupName}
-                lastMessage={chat.lastMessage}
-                lastMessageTime={formatTimestamp(chat.lastMessageTime)}
-                lastMessageSenderId={chat.lastMessageSenderId}
-                isSelected={selectedChat && selectedChat.groupId === chat.groupId}
-                onClick={() => handleChatSelect(chat)}
-              />
-            ))}
-          </div>
+          <button onClick={handleStartChat}>Start Chat</button>
+          {groupChats.map((chat) => (
+            <GroupChatItem
+              key={chat.groupId}
+              groupName={chat.groupName}
+              lastMessage={chat.lastMessage}
+              lastMessageTime={formatTimestamp(chat.lastMessageTime)}
+              lastMessageSenderId={chat.lastMessageSenderId}
+              isSelected={selectedChat && selectedChat.groupId === chat.groupId}
+              onClick={() => handleChatSelect(chat)}
+            />
+          ))}
         </div>
 
         <div className="chat-area">
@@ -288,18 +283,27 @@ function ChatPage() {
             </div>
           ))}
           <h2>Friends List</h2>
-        {friendsList.map((friend) => (
-          <FriendItem
-            key={friend.UserID}
-            userId={friend.UserID}
-            username={friend.Username}
-            email={friend.Email}
-          />
-        ))}
+          {friendsList.map((friend) => (
+            <FriendItem
+              key={friend.UserID}
+              userId={friend.UserID}
+              username={friend.Username}
+              email={friend.Email}
+            />
+          ))}
         </div>
       </div>
+
+      {/* Conditionally render the NewChatModal */}
+      {showNewChatModal && (
+        <NewChatModal
+          onClose={() => setShowNewChatModal(false)}
+          onChatCreated={handleNewChatCreated}
+        />
+      )}
     </div>
   );
 }
 
 export default ChatPage;
+

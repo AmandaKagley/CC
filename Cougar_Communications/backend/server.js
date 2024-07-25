@@ -71,7 +71,7 @@ function createAIChatForUser(userId, username) {
     const query = `
       INSERT INTO GroupChats (GroupName) VALUES (?)
     `;
-    db.run(query, [`AI Assistant Chat for ${username}`], function(err) {
+    db.run(query, [`AI Assistant Chat for ${username}`], function (err) {
       if (err) {
         reject(err);
         return;
@@ -414,6 +414,63 @@ app.get('/search', (req, res) => {
   });
 });
 
+// Consolidated start-chat endpoint
+app.post('/start-chat', (req, res) => {
+  const { userIds } = req.body;
+
+  if (!userIds || userIds.length < 1) {
+    return res.status(400).json({ message: 'At least one user is required to start a chat' });
+  }
+
+  const groupName = userIds.length === 2 ? 'Private Chat' : 'Group Chat';
+
+  db.serialize(() => {
+    db.run('BEGIN TRANSACTION');
+
+    db.run('INSERT INTO GroupChats (GroupName) VALUES (?)', [groupName], function (err) {
+      if (err) {
+        console.error('Error inserting into GroupChats:', err);
+        db.run('ROLLBACK');
+        return res.status(500).json({ message: 'Failed to create chat' });
+      }
+
+      const groupId = this.lastID;
+      const insertMembers = db.prepare('INSERT INTO GroupMembers (GroupID, UserID) VALUES (?, ?)');
+
+      let errorsOccurred = false;
+
+      userIds.forEach(userId => {
+        insertMembers.run(groupId, userId, (err) => {
+          if (err) {
+            console.error('Error inserting into GroupMembers:', err);
+            errorsOccurred = true;
+          }
+        });
+      });
+
+      insertMembers.finalize();
+
+      if (errorsOccurred) {
+        db.run('ROLLBACK');
+        return res.status(500).json({ message: 'Failed to add members to chat' });
+      }
+
+      db.run('COMMIT', (err) => {
+        if (err) {
+          console.error('Error committing transaction:', err);
+          db.run('ROLLBACK');
+          return res.status(500).json({ message: 'Failed to create chat' });
+        }
+
+        res.status(201).json({
+          groupId,
+          groupName,
+          members: userIds
+        });
+      });
+    });
+  });
+});
 // Fetch user group chats
 app.get('/user-group-chats/:userId', (req, res) => {
   const userId = req.params.userId;
@@ -513,7 +570,7 @@ app.put('/user/:userId/bio', (req, res) => {
   const { bio } = req.body;
 
   const query = 'UPDATE Users SET Bio = ? WHERE UserID = ?';
-  db.run(query, [bio, userId], function(err) {
+  db.run(query, [bio, userId], function (err) {
     if (err) {
       console.error('Error updating bio:', err);
       return res.status(500).json({ message: 'Failed to update bio' });
@@ -546,7 +603,7 @@ app.post('/send-friend-request', (req, res) => {
       }
 
       const query = 'INSERT INTO Friends (UserID, FriendID, FriendshipStatus) VALUES (?, ?, ?)';
-  db.run(query, [senderId, recipientId, FRIENDSHIP_STATUS.PENDING], function (err) {
+      db.run(query, [senderId, recipientId, FRIENDSHIP_STATUS.PENDING], function (err) {
         if (err) {
           return res.status(500).json({ message: 'Failed to send friend request' });
         }
@@ -577,11 +634,11 @@ app.post('/accept-friend-request', (req, res) => {
     WHERE (UserID = ? AND FriendID = ? AND FriendshipStatus = ?)
     OR (UserID = ? AND FriendID = ? AND FriendshipStatus = ?)
   `;
-  db.run(updateQuery, [
-    FRIENDSHIP_STATUS.ACCEPTED, 
-    senderId, userId, FRIENDSHIP_STATUS.PENDING,
-    userId, senderId, FRIENDSHIP_STATUS.PENDING
-  ], function (err) {
+    db.run(updateQuery, [
+      FRIENDSHIP_STATUS.ACCEPTED,
+      senderId, userId, FRIENDSHIP_STATUS.PENDING,
+      userId, senderId, FRIENDSHIP_STATUS.PENDING
+    ], function (err) {
       if (err) {
         console.error('Error accepting friend request:', err);
         db.run('ROLLBACK');
@@ -661,7 +718,7 @@ app.get('/friend-requests', (req, res) => {
 // Fetch friends list
 app.get('/friends-list', (req, res) => {
   const userId = req.session.userId;
-  
+
   if (!userId) {
     return res.status(401).json({ message: 'User not logged in' });
   }

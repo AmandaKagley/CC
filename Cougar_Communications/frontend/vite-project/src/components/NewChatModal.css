@@ -1,0 +1,63 @@
+/* NewChatModal.css */
+
+.new-chat-modal {
+  background-color: black;
+  color: rgb(193, 27, 27);
+  border-radius: 8px;
+  padding: 20px;
+  max-width: 400px;
+  margin: 0 auto;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+}
+
+.new-chat-modal h2 {
+  color: darkmaroon;
+  margin-bottom: 15px;
+}
+
+.new-chat-modal input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid darkmaroon;
+  border-radius: 4px;
+  background-color: #222;
+  color: white;
+}
+
+.new-chat-modal button {
+  background-color: darkmaroon;
+  color: rgb(94, 19, 19);
+  border: none;
+  padding: 10px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 10px;
+  font-size: 16px;
+}
+
+.new-chat-modal button:hover {
+  background-color: maroon;
+}
+
+.new-chat-modal .search-results,
+.new-chat-modal .selected-users {
+  margin-top: 10px;
+}
+
+.new-chat-modal .search-results div,
+.new-chat-modal .selected-users div {
+  background-color: #333;
+  padding: 10px;
+  margin-top: 5px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.new-chat-modal .search-results div:hover {
+  background-color: darkmaroon;
+}
