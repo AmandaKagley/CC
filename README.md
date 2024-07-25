@@ -6,8 +6,6 @@ This webite is designed for ONLY the students of Saint Charles Community College
 
 #### A team of students from St. Charles Community College created this site to make life a little easier going through difficult times while getting through our educational experience. Here is how you can reach us with any questions, concerns, and reccomendations: 
  * Amanda Kagley - Ak205788@my.stchas.edu
- * Jeffrey Saylor - Js266819@my.stchas.edu
  * Mitchell Jones - Mj265496@my.stchas.edu
  * Alexander Brinkley - Ab278275@my.stchas.edu
- * Ollie Peel - Ep260480@my.stchas.edu
  * Manoela Toro - Mt258531@my.stchas.edu
