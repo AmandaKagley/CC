@@ -7,15 +7,24 @@
 }
 
 .chat-message {
-    display: flex;
-    align-items: center;
     padding: 10px;
     border-radius: 10px;
     margin-bottom: 10px;
     max-width: 70%;
     word-wrap: break-word;
     color: white;
-}
+    display: flex;
+    align-items: flex-start;
+  }
+  
+  .chat-message .message-content {
+    flex: 1;
+    min-width: 0; /* Allow flexbox to shrink this item */
+  }
+  
+  .chat-message .message-text {
+    word-break: break-word; /* Ensure long words also wrap */
+  }
 
 .chat-message.left {
     background-color: #1a0a0a;

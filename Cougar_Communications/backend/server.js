@@ -269,53 +269,59 @@ app.get('/messages/:groupId', (req, res) => {
   });
 });
 
-// Create a new chat between two users
+// Consolidated start-chat endpoint
 app.post('/start-chat', (req, res) => {
-  const { userId, friendId } = req.body;
+  const { userIds } = req.body;
 
-  if (!userId || !friendId) {
-    return res.status(400).json({ message: 'User ID and Friend ID are required' });
+  if (!userIds || userIds.length < 2) {
+    return res.status(400).json({ message: 'At least two users are required to start a chat' });
   }
 
-  // Create a new group chat
-  const query = `
-    INSERT INTO GroupChats (GroupName)
-    VALUES ('Chat between ${userId} and ${friendId}')
-  `;
-  db.run(query, function (err) {
-    if (err) {
-      console.error('Error creating chat:', err);
-      return res.status(500).json({ message: 'Failed to create chat' });
-    }
+  const groupName = userIds.length === 2 ? 'Private Chat' : 'Group Chat';
 
-    const groupId = this.lastID;
+  db.serialize(() => {
+    db.run('BEGIN TRANSACTION');
 
-    // Add users to the new group chat
-    const addUsersQuery = `
-      INSERT INTO GroupMembers (GroupID, UserID)
-      VALUES (?, ?), (?, ?)
-    `;
-    db.run(addUsersQuery, [groupId, userId, groupId, friendId], function (err) {
+    db.run('INSERT INTO GroupChats (GroupName) VALUES (?)', [groupName], function (err) {
       if (err) {
-        console.error('Error adding users to chat:', err);
-        return res.status(500).json({ message: 'Failed to add users to chat' });
+        console.error('Error inserting into GroupChats:', err);
+        db.run('ROLLBACK');
+        return res.status(500).json({ message: 'Failed to create chat' });
       }
 
-      // Fetch the new chat data
-      const fetchChatQuery = `
-        SELECT 
-          gc.GroupID as groupId, 
-          gc.GroupName as groupName
-        FROM GroupChats gc
-        WHERE gc.GroupID = ?
-      `;
-      db.get(fetchChatQuery, [groupId], (err, chat) => {
+      const groupId = this.lastID;
+      const insertMembers = db.prepare('INSERT INTO GroupMembers (GroupID, UserID) VALUES (?, ?)');
+
+      let errorsOccurred = false;
+
+      userIds.forEach(userId => {
+        insertMembers.run(groupId, userId, (err) => {
+          if (err) {
+            console.error('Error inserting into GroupMembers:', err);
+            errorsOccurred = true;
+          }
+        });
+      });
+
+      insertMembers.finalize();
+
+      if (errorsOccurred) {
+        db.run('ROLLBACK');
+        return res.status(500).json({ message: 'Failed to add members to chat' });
+      }
+
+      db.run('COMMIT', (err) => {
         if (err) {
-          console.error('Error fetching new chat:', err);
-          return res.status(500).json({ message: 'Failed to fetch new chat' });
+          console.error('Error committing transaction:', err);
+          db.run('ROLLBACK');
+          return res.status(500).json({ message: 'Failed to create chat' });
         }
 
-        res.status(201).json(chat);
+        res.status(201).json({
+          groupId,
+          groupName,
+          members: userIds
+        });
       });
     });
   });
@@ -414,63 +420,8 @@ app.get('/search', (req, res) => {
   });
 });
 
-// Consolidated start-chat endpoint
-app.post('/start-chat', (req, res) => {
-  const { userIds } = req.body;
 
-  if (!userIds || userIds.length < 1) {
-    return res.status(400).json({ message: 'At least one user is required to start a chat' });
-  }
 
-  const groupName = userIds.length === 2 ? 'Private Chat' : 'Group Chat';
-
-  db.serialize(() => {
-    db.run('BEGIN TRANSACTION');
-
-    db.run('INSERT INTO GroupChats (GroupName) VALUES (?)', [groupName], function (err) {
-      if (err) {
-        console.error('Error inserting into GroupChats:', err);
-        db.run('ROLLBACK');
-        return res.status(500).json({ message: 'Failed to create chat' });
-      }
-
-      const groupId = this.lastID;
-      const insertMembers = db.prepare('INSERT INTO GroupMembers (GroupID, UserID) VALUES (?, ?)');
-
-      let errorsOccurred = false;
-
-      userIds.forEach(userId => {
-        insertMembers.run(groupId, userId, (err) => {
-          if (err) {
-            console.error('Error inserting into GroupMembers:', err);
-            errorsOccurred = true;
-          }
-        });
-      });
-
-      insertMembers.finalize();
-
-      if (errorsOccurred) {
-        db.run('ROLLBACK');
-        return res.status(500).json({ message: 'Failed to add members to chat' });
-      }
-
-      db.run('COMMIT', (err) => {
-        if (err) {
-          console.error('Error committing transaction:', err);
-          db.run('ROLLBACK');
-          return res.status(500).json({ message: 'Failed to create chat' });
-        }
-
-        res.status(201).json({
-          groupId,
-          groupName,
-          members: userIds
-        });
-      });
-    });
-  });
-});
 // Fetch user group chats
 app.get('/user-group-chats/:userId', (req, res) => {
   const userId = req.params.userId;

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getUserAuth } from '../pages/validation';
 import axios from 'axios';
 import './NewChatModal.css';
 
@@ -8,7 +9,9 @@ function NewChatModal({ onClose, onChatCreated }) {
   const [selectedUsers, setSelectedUsers] = useState([]);
 
   const getUserAuth = () => {
-    return localStorage.getItem('userId');
+    const userId = sessionStorage.getItem('userId');
+    console.log('Retrieved userId from localStorage:', userId);
+    return userId;
   };
 
   const handleSearch = async () => {
@@ -30,19 +33,22 @@ function NewChatModal({ onClose, onChatCreated }) {
       return prevSelectedUsers;
     });
   };
-
+  
   const handleStartChat = async () => {
     const currentUserId = getUserAuth();
+    console.log('Current user ID:', currentUserId);
+    
     if (!currentUserId) {
       console.error('User not authenticated');
+      alert('Authentication error: Unable to retrieve user ID. Please try logging out and logging in again.');
       return;
     }
-
+  
     try {
       const response = await axios.post('http://localhost:3000/start-chat', {
         userIds: [currentUserId, ...selectedUsers.map(u => u.UserID)]
       });
-      console.log('Start chat response:', response.data); // Debugging log
+      console.log('Start chat response:', response.data);
       onChatCreated(response.data);
       onClose();
     } catch (error) {

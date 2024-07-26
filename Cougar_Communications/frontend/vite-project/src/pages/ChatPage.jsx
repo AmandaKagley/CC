@@ -191,8 +191,16 @@ function ChatPage() {
   };
 
   const handleNewChatCreated = (newChat) => {
-    setGroupChats([newChat, ...groupChats]);
-    setSelectedChat(newChat);
+    const currentTime = new Date().toISOString();
+    const formattedNewChat = {
+      ...newChat,
+      lastMessage: null,
+      lastMessageTime: null,
+      lastMessageSenderId: null,
+      creationTime: formatTimestamp(currentTime)
+    };
+    setGroupChats([formattedNewChat, ...groupChats]);
+    setSelectedChat(formattedNewChat);
   };
 
   const handleStartChat = () => {
@@ -226,8 +234,9 @@ function ChatPage() {
               key={chat.groupId}
               groupName={chat.groupName}
               lastMessage={chat.lastMessage}
-              lastMessageTime={formatTimestamp(chat.lastMessageTime)}
+              lastMessageTime={chat.lastMessageTime ? formatTimestamp(chat.lastMessageTime) : chat.creationTime}
               lastMessageSenderId={chat.lastMessageSenderId}
+              creationTime={chat.creationTime}
               isSelected={selectedChat && selectedChat.groupId === chat.groupId}
               onClick={() => handleChatSelect(chat)}
             />
